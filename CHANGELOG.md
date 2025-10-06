@@ -5,15 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2025-10-06
 
 ### Added
 - `usage-rules.md` file with comprehensive LLM usage documentation for when Typster is used as a dependency
 - `CLAUDE.md` for project-specific LLM instructions
 - `AGENTS.md` for agent-specific documentation
+- Precompiled NIF binaries support via `rustler_precompiled`
+- Precompiled binaries for macOS (ARM64 and x86_64) and Linux (ARM64 and x86_64)
+- GitHub Actions workflow for automated NIF builds on releases
+- Environment variable `TYPSTER_BUILD` to force local compilation when needed
 
 ### Changed
 - Updated `comemo` dependency to v0.5
+- Made `rustler` dependency optional (only needed when building from source)
+- Switched from `use Rustler` to `use RustlerPrecompiled` in Native module
+- Updated installation instructions in README to reflect precompiled binary availability
 
 ## [0.2.0] - 2025-10-06
 
@@ -67,5 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.3.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.3.0
 [0.2.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.2.0
 [0.1.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.1.0

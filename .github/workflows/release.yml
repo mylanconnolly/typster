@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-nif:
+    name: Build NIF for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS ARM64
+          - target: aarch64-apple-darwin
+            os: macos-14
+
+          # macOS x86_64
+          - target: x86_64-apple-darwin
+            os: macos-13
+
+          # Linux ARM64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04
+            use-cross: true
+
+          # Linux x86_64
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (for cross-compilation)
+        if: matrix.use-cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            native/typster_nif/target/
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
+
+      - name: Build NIF
+        working-directory: native/typster_nif
+        run: |
+          if [ "${{ matrix.use-cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p artifacts
+          if [[ "${{ matrix.target }}" == *"darwin"* ]]; then
+            cp native/typster_nif/target/${{ matrix.target }}/release/libtypster_nif.dylib artifacts/libtypster_nif-${{ matrix.target }}.so
+          else
+            cp native/typster_nif/target/${{ matrix.target }}/release/libtypster_nif.so artifacts/libtypster_nif-${{ matrix.target }}.so
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nif-${{ matrix.target }}
+          path: artifacts/libtypster_nif-${{ matrix.target }}.so
+          if-no-files-found: error
+
+  create-checksums:
+    name: Create checksums and release
+    needs: build-nif
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27.3'
+          elixir-version: '1.18'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Organize artifacts
+        run: |
+          mkdir -p release
+          find artifacts -name '*.so' -exec cp {} release/ \;
+          ls -lh release/
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Create checksums
+        run: |
+          mix rustler_precompiled.download Typster.Native --all --print
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.so
+            checksum-*.exs
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

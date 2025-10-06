@@ -23,7 +23,22 @@ defmodule Typster.Native do
   for the recommended API.
   """
 
-  use Rustler, otp_app: :typster, crate: "typster_nif", mode: :release
+  version = Mix.Project.config()[:version]
+
+  use RustlerPrecompiled,
+    otp_app: :typster,
+    crate: "typster_nif",
+    base_url: "https://github.com/mylanconnolly/typster/releases/download/v#{version}",
+    force_build: System.get_env("TYPSTER_BUILD") in ["1", "true"],
+    version: version,
+    targets: [
+      # macOS
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      # Linux
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-gnu"
+    ]
 
   # Placeholder functions - these will be replaced by the actual NIF implementations
   # If the NIF is not loaded, these fallback implementations will be called
