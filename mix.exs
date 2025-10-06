@@ -35,7 +35,7 @@ defmodule Typster.MixProject do
   defp package do
     [
       name: "typster",
-      files: ~w(lib native priv .formatter.exs mix.exs README.md LICENSE),
+      files: ~w(lib native .formatter.exs mix.exs CHANGELOG.md README.md LICENSE),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/mylanconnolly/typster"}
     ]
