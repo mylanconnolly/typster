@@ -8,7 +8,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustler = "0.37.0"
+rustler = { version = "0.37.0", default-features = false, features = ["derive"] }
 typst = "0.13"
 typst-pdf = "0.13"
 typst-svg = "0.13"
@@ -21,3 +21,6 @@ chrono = "0.4"
 reqwest = { version = "0.12", features = ["blocking"] }
 tar = "0.4"
 flate2 = "1.0"
+
+[features]
+default = ["rustler/nif_version_2_17"]
