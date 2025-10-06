@@ -1,12 +1,12 @@
 defmodule Typster.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
 
   def project do
     [
       app: :typster,
-      version: "0.2.0",
+      version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -35,7 +35,7 @@ defmodule Typster.MixProject do
   defp package do
     [
       name: "typster",
-      files: ~w(lib native .formatter.exs mix.exs CHANGELOG.md README.md LICENSE),
+      files: ~w(lib native .formatter.exs mix.exs CHANGELOG.md README.md LICENSE checksum-*.exs),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/mylanconnolly/typster"}
     ]
@@ -52,7 +52,8 @@ defmodule Typster.MixProject do
   defp deps do
     [
       {:usage_rules, "~> 0.1"},
-      {:rustler, "~> 0.37.1"},
+      {:rustler, "~> 0.37.1", optional: true},
+      {:rustler_precompiled, "~> 0.8"},
       {:jason, "~> 1.0"},
       {:stream_data, "~> 1.1", only: [:test, :dev]},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},

@@ -23,7 +23,7 @@ Add `typster` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:typster, "~> 0.2.0"}
+    {:typster, "~> 0.3.0"}
   ]
 end
 ```
@@ -32,10 +32,9 @@ Then run:
 
 ```bash
 mix deps.get
-mix compile
 ```
 
-**Note**: Typster requires Rust to compile the native NIF. Make sure you have Rust installed (see [rustup.rs](https://rustup.rs/)).
+**Note**: Precompiled binaries are available for macOS (ARM64/x86_64) and Linux (ARM64/x86_64). If a precompiled binary is not available for your platform, Typster will automatically compile from source, which requires Rust to be installed (see [rustup.rs](https://rustup.rs/)). You can force compilation from source by setting `TYPSTER_BUILD=1`.
 
 ## Quick Start
 

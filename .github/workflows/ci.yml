@@ -20,6 +20,7 @@ jobs:
     env:
       MIX_ENV: test
       RUSTFLAGS: "-D warnings"
+      TYPSTER_BUILD: "1"
 
     steps:
       - name: Checkout code
