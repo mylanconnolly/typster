@@ -70,14 +70,22 @@ jobs:
             cargo build --release --target ${{ matrix.target }}
           fi
 
+      - name: Debug - List build output
+        run: |
+          echo "Contents of target/${{ matrix.target }}/release:"
+          ls -la native/typster_nif/target/${{ matrix.target }}/release/ || echo "Directory not found"
+
       - name: Prepare artifact
         run: |
           mkdir -p artifacts
           if [[ "${{ matrix.target }}" == *"darwin"* ]]; then
-            cp native/typster_nif/target/${{ matrix.target }}/release/libtypster_nif.dylib artifacts/libtypster_nif-${{ matrix.target }}.so
+            # Find the .dylib file and copy it
+            find native/typster_nif/target/${{ matrix.target }}/release -name "*.dylib" -exec cp {} artifacts/libtypster_nif-${{ matrix.target }}.so \;
           else
-            cp native/typster_nif/target/${{ matrix.target }}/release/libtypster_nif.so artifacts/libtypster_nif-${{ matrix.target }}.so
+            # Find the .so file and copy it
+            find native/typster_nif/target/${{ matrix.target }}/release -maxdepth 1 -name "*.so" -exec cp {} artifacts/libtypster_nif-${{ matrix.target }}.so \;
           fi
+          ls -la artifacts/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
