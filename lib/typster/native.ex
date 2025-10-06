@@ -23,7 +23,7 @@ defmodule Typster.Native do
   for the recommended API.
   """
 
-  use Rustler, otp_app: :typster, crate: "typster_nif"
+  use Rustler, otp_app: :typster, crate: "typster_nif", mode: :release
 
   # Placeholder functions - these will be replaced by the actual NIF implementations
   # If the NIF is not loaded, these fallback implementations will be called
