@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `usage-rules.md` file with comprehensive LLM usage documentation for when Typster is used as a dependency
+- `CLAUDE.md` for project-specific LLM instructions
+- `AGENTS.md` for agent-specific documentation
+
+### Changed
+- Updated `comemo` dependency to v0.5
+
 ## [0.2.0] - 2025-10-06
 
 ### Fixed
