@@ -33,3 +33,5 @@ typster-*.tar
 .DS_Store
 
 priv/native/*.so
+checksum-*exs
+/native/typster_nif/target

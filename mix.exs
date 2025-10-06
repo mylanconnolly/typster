@@ -1,7 +1,7 @@
 defmodule Typster.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.3.1"
 
   def project do
     [
@@ -51,7 +51,7 @@ defmodule Typster.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:usage_rules, "~> 0.1"},
+      {:usage_rules, "~> 0.1", only: [:dev]},
       {:rustler, "~> 0.37.1", optional: true},
       {:rustler_precompiled, "~> 0.8"},
       {:jason, "~> 1.0"},

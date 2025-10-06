@@ -23,7 +23,7 @@ Add `typster` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:typster, "~> 0.3.0"}
+    {:typster, "~> 0.3.1"}
   ]
 end
 ```
