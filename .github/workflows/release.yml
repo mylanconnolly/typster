@@ -57,6 +57,20 @@ jobs:
           workspaces: |
             native/typster_nif
 
+      - name: Test cargo build (debug)
+        working-directory: native/typster_nif
+        run: |
+          echo "Building with target ${{ matrix.job.target }}"
+          if [ "${{ matrix.job.use-cross }}" = "true" ]; then
+            cargo install cross --git https://github.com/cross-rs/cross || true
+            cross build --target ${{ matrix.job.target }} --features nif_version_${{ matrix.nif }}
+          else
+            cargo build --target ${{ matrix.job.target }} --features nif_version_${{ matrix.nif }}
+          fi
+          echo "Build completed, checking output:"
+          ls -la target/${{ matrix.job.target }}/debug/ || echo "Debug directory not found"
+          ls -la target/${{ matrix.job.target }}/release/ || echo "Release directory not found"
+
       - name: Build the project
         id: build-crate
         uses: philss/rustler-precompiled-action@v1.1.4
