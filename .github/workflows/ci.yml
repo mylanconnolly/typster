@@ -8,8 +8,14 @@ on:
 
 jobs:
   test:
-    name: Build and Test
+    name: Build and Test (OTP ${{ matrix.otp }}, Elixir ${{ matrix.elixir }}, Rust ${{ matrix.rust }})
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        otp: ["27.3", "28.1"]
+        elixir: ["1.17", "1.18"]
+        rust: ["1.88"]
 
     env:
       MIX_ENV: test
@@ -22,7 +28,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: "1.88"
+          toolchain: ${{ matrix.rust }}
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
@@ -33,15 +39,15 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             native/typster_nif/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo-${{ matrix.rust }}-
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28.1"
-          elixir-version: "1.18.4"
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
       - name: Cache Mix dependencies
         uses: actions/cache@v4
@@ -49,9 +55,9 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-
+            ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
 
       - name: Install Mix dependencies
         run: mix deps.get
