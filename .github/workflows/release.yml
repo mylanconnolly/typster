@@ -1,140 +1,97 @@
-name: Release
+name: Build precompiled NIFs
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
-  build-nif:
-    name: Build NIF for ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
+  build_release:
+    name: NIF ${{ matrix.nif }} - ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # macOS ARM64
-          - target: aarch64-apple-darwin
-            os: macos-14
-
-          # macOS x86_64
-          - target: x86_64-apple-darwin
-            os: macos-13
-
-          # Linux ARM64
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-22.04
-            use-cross: true
-
-          # Linux x86_64
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-22.04
+        nif: ["2.15", "2.16", "2.17"]
+        job:
+          - { target: aarch64-apple-darwin, os: macos-15 }
+          - {
+              target: aarch64-unknown-linux-gnu,
+              os: ubuntu-24.04,
+              use-cross: true,
+            }
+          - {
+              target: aarch64-unknown-linux-musl,
+              os: ubuntu-24.04,
+              use-cross: true,
+            }
+          - { target: x86_64-apple-darwin, os: macos-13 }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04 }
+          - {
+              target: x86_64-unknown-linux-musl,
+              os: ubuntu-24.04,
+              use-cross: true,
+            }
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-      - name: Set up Rust
+      - name: Extract project version
+        shell: bash
+        run: |
+          # Get the project version from mix.exs
+          echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          targets: ${{ matrix.target }}
+          target: ${{ matrix.job.target }}
 
-      - name: Install cross (for cross-compilation)
-        if: matrix.use-cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
-
-      - name: Cache Rust dependencies
-        uses: actions/cache@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            native/typster_nif/target/
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-
+          prefix-key: v0-precomp
+          shared-key: ${{ matrix.job.target }}-${{ matrix.nif }}
+          workspaces: |
+            native/typster_nif
 
-      - name: Build NIF
-        working-directory: native/typster_nif
-        run: |
-          if [ "${{ matrix.use-cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
-          else
-            cargo build --release --target ${{ matrix.target }}
-          fi
+      - name: Build the project
+        id: build-crate
+        uses: philss/rustler-precompiled-action@v1.1.4
+        with:
+          project-name: typster_nif
+          project-dir: "native/typster_nif"
+          project-version: ${{ env.PROJECT_VERSION }}
+          nif-version: ${{ matrix.nif }}
+          target: ${{ matrix.job.target }}
+          use-cross: ${{ matrix.job.use-cross }}
 
-      - name: Debug - List build output
-        run: |
-          echo "Contents of target/${{ matrix.target }}/release:"
-          ls -la native/typster_nif/target/${{ matrix.target }}/release/ || echo "Directory not found"
+      - name: Artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ${{ steps.build-crate.outputs.file-path }}
 
-      - name: Prepare artifact
-        run: |
-          mkdir -p artifacts
-          if [[ "${{ matrix.target }}" == *"darwin"* ]]; then
-            # Find the .dylib file and copy it
-            find native/typster_nif/target/${{ matrix.target }}/release -name "*.dylib" -exec cp {} artifacts/libtypster_nif-${{ matrix.target }}.so \;
-          else
-            # Find the .so file and copy it
-            find native/typster_nif/target/${{ matrix.target }}/release -maxdepth 1 -name "*.so" -exec cp {} artifacts/libtypster_nif-${{ matrix.target }}.so \;
-          fi
-          ls -la artifacts/
-
-      - name: Upload artifact
+      - name: Artifact upload
         uses: actions/upload-artifact@v4
         with:
-          name: nif-${{ matrix.target }}
-          path: artifacts/libtypster_nif-${{ matrix.target }}.so
-          if-no-files-found: error
+          name: ${{ steps.build-crate.outputs.file-name }}
+          path: ${{ steps.build-crate.outputs.file-path }}
 
-  create-checksums:
-    name: Create checksums and release
-    needs: build-nif
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: '27.3'
-          elixir-version: '1.18'
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Organize artifacts
-        run: |
-          mkdir -p release
-          find artifacts -name '*.so' -exec cp {} release/ \;
-          ls -lh release/
-
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Create checksums
-        run: |
-          mix rustler_precompiled.download Typster.Native --all --print
-
-      - name: Create GitHub Release
+      - name: Publish archives and packages
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/*.so
-            checksum-*.exs
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ${{ steps.build-crate.outputs.file-path }}
+        if: startsWith(github.ref, 'refs/tags/')
