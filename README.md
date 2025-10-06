@@ -2,6 +2,7 @@
 
 **Typster** is an Elixir wrapper for the [Typst](https://typst.app) document preparation system, providing powerful and ergonomic functions for rendering Typst templates to PDF, SVG, and PNG formats.
 
+[![CI](https://github.com/mylanconnolly/typster/actions/workflows/ci.yml/badge.svg)](https://github.com/mylanconnolly/typster/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/typster.svg)](https://hex.pm/packages/typster)
 [![Documentation](https://img.shields.io/badge/docs-hexpm-blue.svg)](https://hexdocs.pm/typster)
 
