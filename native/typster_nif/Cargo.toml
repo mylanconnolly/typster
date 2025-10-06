@@ -23,4 +23,7 @@ tar = "0.4"
 flate2 = "1.0"
 
 [features]
-default = ["rustler/nif_version_2_17"]
+default = ["nif_version_2_15"]
+nif_version_2_15 = ["rustler/nif_version_2_15"]
+nif_version_2_16 = ["rustler/nif_version_2_16"]
+nif_version_2_17 = ["rustler/nif_version_2_17"]
