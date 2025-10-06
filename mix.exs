@@ -51,6 +51,7 @@ defmodule Typster.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:usage_rules, "~> 0.1"},
       {:rustler, "~> 0.37.1"},
       {:jason, "~> 1.0"},
       {:stream_data, "~> 1.1", only: [:test, :dev]},
