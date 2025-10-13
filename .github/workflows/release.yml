@@ -69,7 +69,7 @@ jobs:
           use-cross: ${{ matrix.job.use-cross }}
 
       - name: Artifact attestation
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: ${{ steps.build-crate.outputs.file-path }}
 
