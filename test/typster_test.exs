@@ -313,7 +313,7 @@ defmodule TypsterTest do
       invalid_template = "#invalid syntax {"
       assert {:error, errors} = Typster.check(invalid_template)
       assert is_list(errors)
-      assert length(errors) > 0
+      refute Enum.empty?(errors)
       assert Enum.all?(errors, &is_binary/1)
     end
 
@@ -321,14 +321,14 @@ defmodule TypsterTest do
       invalid_template = "= Title\n#for item in items ["
       assert {:error, errors} = Typster.check(invalid_template)
       assert is_list(errors)
-      assert length(errors) > 0
+      refute Enum.empty?(errors)
     end
 
     test "returns error for undefined variable reference" do
       template = "= Value: #undefined_var"
       assert {:error, errors} = Typster.check(template)
       assert is_list(errors)
-      assert length(errors) > 0
+      refute Enum.empty?(errors)
     end
 
     test "accepts package_paths option" do

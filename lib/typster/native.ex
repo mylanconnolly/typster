@@ -57,6 +57,5 @@ defmodule Typster.Native do
   def compile_to_png_with_options(_source, _variables, _package_paths, _pixel_per_pt),
     do: :erlang.nif_error(:nif_not_loaded)
 
-  def check_syntax(_source, _variables, _package_paths),
-    do: :erlang.nif_error(:nif_not_loaded)
+  def check_syntax(_source, _variables, _package_paths), do: :erlang.nif_error(:nif_not_loaded)
 end
