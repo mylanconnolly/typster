@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-20
+
+### Added
+- **Syntax checking functions** for validating Typst templates without rendering
+  - `Typster.check/3` - Validates template syntax and returns `:ok` or `{:error, errors}`
+  - `Typster.check!/3` - Bang variant that raises `Typster.CompileError` on validation failure
+  - Both functions support variable binding and package paths like render functions
+  - Returns detailed error messages as a list when validation fails
+  - Useful for validating user-submitted templates, providing syntax feedback, and pre-flight checks
+- New Rust NIF `check_syntax/3` for efficient syntax validation without rendering overhead
+- 12 comprehensive tests covering valid/invalid templates, variables, and error handling
+
+### Example Usage
+```elixir
+# Validate a template before rendering
+case Typster.check(template, variables) do
+  :ok ->
+    {:ok, pdf} = Typster.render_pdf(template, variables)
+  {:error, errors} ->
+    Logger.error("Template validation failed: #{inspect(errors)}")
+end
+
+# Or use the bang variant
+:ok = Typster.check!("= Hello World")
+```
+
 ## [0.3.2] - 2025-10-06
 
 This release has no new features or changes. I accidentally retired version 0.3.1 on hex.pm. This is functionally identical to 0.3.1.
@@ -83,6 +109,7 @@ This release has no new features or changes. I accidentally retired version 0.3.
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.4.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.4.0
 [0.3.2]: https://github.com/mylanconnolly/typster/releases/tag/v0.3.2
 [0.3.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.3.1
 [0.3.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.3.0

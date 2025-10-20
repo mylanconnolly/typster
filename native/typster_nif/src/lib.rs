@@ -398,4 +398,41 @@ fn compile_to_png_with_options<'a>(
     Ok(png_pages)
 }
 
+/// Check the syntax of a Typst template without rendering
+/// Returns a list of error messages if compilation fails, or an empty list if successful
+#[rustler::nif]
+fn check_syntax<'a>(
+    env: Env<'a>,
+    source: String,
+    variables: Term<'a>,
+    package_paths: Vec<String>,
+) -> Result<Vec<String>, String> {
+    // Convert Elixir variables to Typst Dict
+    let var_dict = convert::terms_to_dict(env, variables)
+        .map_err(|e| format!("Failed to convert variables: {}", e))?;
+
+    // Convert package path strings to PathBufs
+    let paths: Vec<std::path::PathBuf> = package_paths
+        .into_iter()
+        .map(std::path::PathBuf::from)
+        .collect();
+
+    // Create the world with the source code, variables, and package paths
+    let world = TypstWorld::new_with_options(source, var_dict, paths)
+        .map_err(|e| format!("Failed to create world: {}", e))?;
+
+    // Attempt to compile the document
+    match typst::compile::<PagedDocument>(&world).output {
+        Ok(_) => Ok(Vec::new()), // Success - return empty list
+        Err(errors) => {
+            // Extract error messages
+            let error_messages: Vec<String> = errors
+                .iter()
+                .map(|e| format!("{:?}", e))
+                .collect();
+            Ok(error_messages) // Return list of errors
+        }
+    }
+}
+
 rustler::init!("Elixir.Typster.Native");

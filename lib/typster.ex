@@ -256,6 +256,80 @@ defmodule Typster do
   end
 
   @doc """
+  Check the syntax of a Typst template without rendering.
+
+  This function validates the template syntax by attempting to compile it,
+  but doesn't produce any output. It's useful for validating templates before
+  rendering or providing syntax feedback to users.
+
+  ## Parameters
+  - `source` - The Typst template source code
+  - `variables` - Map of variables to bind (default: %{})
+  - `opts` - Keyword list of options
+
+  ## Options
+  - `:package_paths` - List of local package directories (default: [])
+
+  ## Returns
+  - `:ok` if the template syntax is valid
+  - `{:error, errors}` where errors is a list of error messages
+
+  ## Examples
+
+      # Valid template
+      :ok = Typster.check("= Hello World")
+
+      # Invalid template
+      {:error, errors} = Typster.check("= Unclosed #for")
+      # errors will contain a list of error messages
+
+      # With variables
+      template = "= Report for #year"
+      :ok = Typster.check(template, %{year: 2025})
+
+      # With packages
+      template = ~S(#import "@preview/tiaoma:0.3.0": qrcode)
+      :ok = Typster.check(template, %{}, package_paths: [])
+  """
+  @spec check(String.t(), variables(), render_options()) :: :ok | {:error, [String.t()]}
+  def check(source, variables \\ %{}, opts \\ []) do
+    package_paths = Keyword.get(opts, :package_paths, [])
+    string_vars = stringify_keys(variables)
+
+    case Native.check_syntax(source, string_vars, package_paths) do
+      {:ok, []} -> :ok
+      {:ok, errors} -> {:error, errors}
+      {:error, reason} -> {:error, [reason]}
+    end
+  end
+
+  @doc """
+  Check the syntax of a Typst template, raising on error.
+
+  Same as `check/3` but raises `Typster.CompileError` if there are syntax errors.
+
+  ## Examples
+
+      # Valid template
+      :ok = Typster.check!("= Hello World")
+
+      # Invalid template - raises
+      try do
+        Typster.check!("= Invalid #syntax")
+      rescue
+        e in Typster.CompileError ->
+          IO.puts("Syntax error: \#{e.message}")
+      end
+  """
+  @spec check!(String.t(), variables(), render_options()) :: :ok
+  def check!(source, variables \\ %{}, opts \\ []) do
+    case check(source, variables, opts) do
+      :ok -> :ok
+      {:error, errors} -> raise Typster.CompileError, message: Enum.join(errors, "\n")
+    end
+  end
+
+  @doc """
   Render a Typst template to PDF format, raising on error.
 
   Same as `render_pdf/3` but raises `Typster.CompileError` on failure.

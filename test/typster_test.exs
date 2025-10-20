@@ -293,4 +293,103 @@ defmodule TypsterTest do
       assert is_binary(pdf)
     end
   end
+
+  describe "check/3" do
+    test "returns :ok for valid template" do
+      assert :ok = Typster.check(@simple_template)
+    end
+
+    test "returns :ok for template with variables" do
+      variables = %{
+        year: 2025,
+        author_name: "John Doe",
+        status: "Published"
+      }
+
+      assert :ok = Typster.check(@template_with_vars, variables)
+    end
+
+    test "returns error for invalid template" do
+      invalid_template = "#invalid syntax {"
+      assert {:error, errors} = Typster.check(invalid_template)
+      assert is_list(errors)
+      assert length(errors) > 0
+      assert Enum.all?(errors, &is_binary/1)
+    end
+
+    test "returns error for unclosed brackets" do
+      invalid_template = "= Title\n#for item in items ["
+      assert {:error, errors} = Typster.check(invalid_template)
+      assert is_list(errors)
+      assert length(errors) > 0
+    end
+
+    test "returns error for undefined variable reference" do
+      template = "= Value: #undefined_var"
+      assert {:error, errors} = Typster.check(template)
+      assert is_list(errors)
+      assert length(errors) > 0
+    end
+
+    test "accepts package_paths option" do
+      assert :ok = Typster.check(@simple_template, %{}, package_paths: [])
+    end
+
+    test "validates template with nested variables" do
+      template = """
+      = #user.name
+      Email: #user.email
+      """
+
+      variables = %{
+        user: %{
+          name: "Alice",
+          email: "alice@example.com"
+        }
+      }
+
+      assert :ok = Typster.check(template, variables)
+    end
+
+    test "validates template with arrays" do
+      template = """
+      #for item in items [
+        - #item
+      ]
+      """
+
+      variables = %{
+        items: ["Apple", "Banana"]
+      }
+
+      assert :ok = Typster.check(template, variables)
+    end
+  end
+
+  describe "check!/3" do
+    test "returns :ok for valid template" do
+      assert :ok = Typster.check!(@simple_template)
+    end
+
+    test "raises CompileError for invalid template" do
+      assert_raise Typster.CompileError, fn ->
+        Typster.check!("#invalid syntax {")
+      end
+    end
+
+    test "raises CompileError with error message" do
+      error =
+        assert_raise Typster.CompileError, fn ->
+          Typster.check!("#for unclosed")
+        end
+
+      assert is_binary(error.message)
+      assert String.length(error.message) > 0
+    end
+
+    test "works with variables" do
+      variables = %{title: "Test"}
+      assert :ok = Typster.check!("= #title", variables)
+    end
+  end
 end

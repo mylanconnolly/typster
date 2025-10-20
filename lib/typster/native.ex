@@ -15,6 +15,7 @@ defmodule Typster.Native do
   - `compile_to_pdf_with_full_options/4` - PDF with metadata
   - `compile_to_svg_with_options/3` - Multi-page SVG
   - `compile_to_png_with_options/4` - Multi-page PNG
+  - `check_syntax/3` - Syntax validation without rendering
 
   ## Note
 
@@ -54,5 +55,8 @@ defmodule Typster.Native do
     do: :erlang.nif_error(:nif_not_loaded)
 
   def compile_to_png_with_options(_source, _variables, _package_paths, _pixel_per_pt),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  def check_syntax(_source, _variables, _package_paths),
     do: :erlang.nif_error(:nif_not_loaded)
 end
