@@ -9,6 +9,7 @@ use typst::syntax::{FileId, Source, VirtualPath};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{Library, World};
+use typst_kit::fonts::{FontSlot, Fonts};
 
 use crate::packages;
 use crate::TypstError;
@@ -26,7 +27,7 @@ pub struct TypstWorld {
     /// Font book for font discovery
     book: LazyHash<FontBook>,
     /// Available fonts
-    fonts: Vec<Font>,
+    fonts: Vec<FontSlot>,
     /// Cache of loaded source files
     sources: HashMap<FileId, Source>,
     /// Main source file
@@ -68,7 +69,6 @@ impl TypstWorld {
 
         // Initialize fonts
         let fonts = Self::search_fonts();
-        let book = LazyHash::new(FontBook::from_fonts(&fonts));
 
         let mut sources = HashMap::new();
         sources.insert(main_id, source);
@@ -81,8 +81,8 @@ impl TypstWorld {
             package_paths,
             package_cache_dir,
             library: LazyHash::new(Library::default()),
-            book,
-            fonts,
+            book: LazyHash::new(fonts.book.clone()),
+            fonts: fonts.fonts,
             sources,
             main: main_id,
             files: HashMap::new(),
@@ -140,15 +140,11 @@ impl TypstWorld {
     }
 
     /// Search for system fonts
-    fn search_fonts() -> Vec<Font> {
-        let mut fonts = Vec::new();
-
-        // Add embedded fonts from typst-assets
-        for data in typst_assets::fonts() {
-            if let Some(font) = Font::new(Bytes::new(data), 0) {
-                fonts.push(font);
-            }
-        }
+    fn search_fonts() -> Fonts {
+        let fonts = Fonts::searcher()
+            .include_system_fonts(true)
+            .include_embedded_fonts(true)
+            .search();
 
         fonts
     }
@@ -256,7 +252,7 @@ impl World for TypstWorld {
     }
 
     fn font(&self, index: usize) -> Option<Font> {
-        self.fonts.get(index).cloned()
+        self.fonts.get(index)?.get()
     }
 
     fn today(&self, offset: Option<i64>) -> Option<Datetime> {
