@@ -28,7 +28,7 @@ defmodule Typster.ConcurrentTest do
         for i <- 1..10 do
           Task.async(fn ->
             variables = %{doc_id: i}
-            Typster.render_pdf(@simple_template, variables)
+            Typster.render_pdf(@simple_template, variables: variables)
           end)
         end
 
@@ -52,7 +52,7 @@ defmodule Typster.ConcurrentTest do
         for i <- 1..50 do
           Task.async(fn ->
             variables = %{doc_id: i}
-            Typster.render_pdf(@simple_template, variables)
+            Typster.render_pdf(@simple_template, variables: variables)
           end)
         end
 
@@ -76,7 +76,7 @@ defmodule Typster.ConcurrentTest do
         for i <- 1..5 do
           Task.async(fn ->
             variables = %{report_id: i}
-            Typster.render_pdf(@complex_template, variables)
+            Typster.render_pdf(@complex_template, variables: variables)
           end)
         end
 
@@ -96,7 +96,7 @@ defmodule Typster.ConcurrentTest do
         for i <- 1..10 do
           Task.async(fn ->
             variables = %{doc_id: i}
-            Typster.render_svg(@simple_template, variables)
+            Typster.render_svg(@simple_template, variables: variables)
           end)
         end
 
@@ -117,7 +117,10 @@ defmodule Typster.ConcurrentTest do
         for resolution <- resolutions do
           Task.async(fn ->
             {resolution,
-             Typster.render_png(@simple_template, %{doc_id: 1}, pixel_per_pt: resolution)}
+             Typster.render_png(@simple_template,
+               variables: %{doc_id: 1},
+               pixel_per_pt: resolution
+             )}
           end)
         end
 
@@ -158,7 +161,7 @@ defmodule Typster.ConcurrentTest do
         for i <- 1..5 do
           Task.async(fn ->
             variables = %{doc_id: i}
-            Typster.render_pdf(template, variables)
+            Typster.render_pdf(template, variables: variables)
           end)
         end
 
@@ -179,21 +182,21 @@ defmodule Typster.ConcurrentTest do
       pdf_tasks =
         for i <- 1..5 do
           Task.async(fn ->
-            {:pdf, Typster.render_pdf(@simple_template, %{doc_id: i})}
+            {:pdf, Typster.render_pdf(@simple_template, variables: %{doc_id: i})}
           end)
         end
 
       svg_tasks =
         for i <- 1..5 do
           Task.async(fn ->
-            {:svg, Typster.render_svg(@simple_template, %{doc_id: i})}
+            {:svg, Typster.render_svg(@simple_template, variables: %{doc_id: i})}
           end)
         end
 
       png_tasks =
         for i <- 1..5 do
           Task.async(fn ->
-            {:png, Typster.render_png(@simple_template, %{doc_id: i})}
+            {:png, Typster.render_png(@simple_template, variables: %{doc_id: i})}
           end)
         end
 
@@ -223,7 +226,7 @@ defmodule Typster.ConcurrentTest do
         for i <- 1..10 do
           Task.async(fn ->
             template = if rem(i, 2) == 0, do: @simple_template, else: "#invalid {"
-            Typster.render_pdf(template, %{doc_id: i})
+            Typster.render_pdf(template, variables: %{doc_id: i})
           end)
         end
 
@@ -269,7 +272,7 @@ defmodule Typster.ConcurrentTest do
               end
 
             variables = %{doc_id: i, report_id: i}
-            Typster.render_pdf(template, variables)
+            Typster.render_pdf(template, variables: variables)
           end)
         end
 

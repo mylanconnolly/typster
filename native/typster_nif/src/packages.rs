@@ -11,10 +11,7 @@ use crate::TypstError;
 const PACKAGE_REGISTRY_URL: &str = "https://packages.typst.org";
 
 /// Download and extract a package from the Typst registry
-pub fn download_package(
-    spec: &PackageSpec,
-    cache_dir: &Path,
-) -> Result<PathBuf, TypstError> {
+pub fn download_package(spec: &PackageSpec, cache_dir: &Path) -> Result<PathBuf, TypstError> {
     // Create cache directory structure: cache_dir/namespace/name/version
     let package_dir = cache_dir
         .join(spec.namespace.as_str())
@@ -28,7 +25,8 @@ pub fn download_package(
 
     // Construct download URL
     let package_name = format!("{}-{}", spec.name.as_str(), spec.version);
-    let url = format!("{}/{}/{}.tar.gz",
+    let url = format!(
+        "{}/{}/{}.tar.gz",
         PACKAGE_REGISTRY_URL,
         spec.namespace.as_str(),
         package_name
@@ -46,7 +44,8 @@ pub fn download_package(
         )));
     }
 
-    let bytes = response.bytes()
+    let bytes = response
+        .bytes()
         .map_err(|e| TypstError::PackageError(format!("Failed to read package data: {}", e)))?;
 
     // Create parent directory
@@ -57,7 +56,8 @@ pub fn download_package(
     let decoder = GzDecoder::new(&bytes[..]);
     let mut archive = Archive::new(decoder);
 
-    archive.unpack(&package_dir)
+    archive
+        .unpack(&package_dir)
         .map_err(|e| TypstError::PackageError(format!("Failed to extract package: {}", e)))?;
 
     Ok(package_dir)
@@ -71,14 +71,11 @@ pub fn get_cache_dir() -> Result<PathBuf, TypstError> {
     // On macOS: ~/Library/Caches/typst/packages
 
     let cache_dir = if cfg!(target_os = "macos") {
-        dirs::home_dir()
-            .map(|h| h.join("Library/Caches/typst/packages"))
+        dirs::home_dir().map(|h| h.join("Library/Caches/typst/packages"))
     } else if cfg!(target_os = "windows") {
-        dirs::cache_dir()
-            .map(|c| c.join("typst/packages"))
+        dirs::cache_dir().map(|c| c.join("typst/packages"))
     } else {
-        dirs::cache_dir()
-            .map(|c| c.join("typst/packages"))
+        dirs::cache_dir().map(|c| c.join("typst/packages"))
     };
 
     cache_dir.ok_or_else(|| TypstError::IoError("Failed to determine cache directory".to_string()))

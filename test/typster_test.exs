@@ -32,7 +32,7 @@ defmodule TypsterTest do
         status: "Published"
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(@template_with_vars, variables)
+      assert {:ok, pdf} = Typster.render_pdf(@template_with_vars, variables: variables)
       assert is_binary(pdf)
       assert byte_size(pdf) > 0
     end
@@ -44,13 +44,13 @@ defmodule TypsterTest do
         keywords: "test, elixir"
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(@simple_template, %{}, metadata: metadata)
+      assert {:ok, pdf} = Typster.render_pdf(@simple_template, metadata: metadata)
       assert is_binary(pdf)
       # Metadata doesn't change output structure significantly but should not error
     end
 
     test "renders with package paths" do
-      assert {:ok, pdf} = Typster.render_pdf(@simple_template, %{}, package_paths: [])
+      assert {:ok, pdf} = Typster.render_pdf(@simple_template, package_paths: [])
       assert is_binary(pdf)
     end
 
@@ -63,13 +63,13 @@ defmodule TypsterTest do
 
     test "accepts atom keys in variables" do
       variables = %{year: 2025}
-      assert {:ok, pdf} = Typster.render_pdf("= Year #year", variables)
+      assert {:ok, pdf} = Typster.render_pdf("= Year #year", variables: variables)
       assert is_binary(pdf)
     end
 
     test "accepts string keys in variables" do
       variables = %{"year" => 2025}
-      assert {:ok, pdf} = Typster.render_pdf("= Year #year", variables)
+      assert {:ok, pdf} = Typster.render_pdf("= Year #year", variables: variables)
       assert is_binary(pdf)
     end
   end
@@ -107,7 +107,7 @@ defmodule TypsterTest do
 
     test "renders with variables" do
       variables = %{title: "SVG Test"}
-      assert {:ok, svg_pages} = Typster.render_svg("= #title", variables)
+      assert {:ok, svg_pages} = Typster.render_svg("= #title", variables: variables)
       assert length(svg_pages) == 1
     end
 
@@ -130,8 +130,8 @@ defmodule TypsterTest do
     end
 
     test "renders with different resolutions" do
-      {:ok, png_2x} = Typster.render_png(@simple_template, %{}, pixel_per_pt: 2.0)
-      {:ok, png_4x} = Typster.render_png(@simple_template, %{}, pixel_per_pt: 4.0)
+      {:ok, png_2x} = Typster.render_png(@simple_template, pixel_per_pt: 2.0)
+      {:ok, png_4x} = Typster.render_png(@simple_template, pixel_per_pt: 4.0)
 
       # Higher resolution should produce larger files
       assert byte_size(List.first(png_4x)) > byte_size(List.first(png_2x))
@@ -150,7 +150,7 @@ defmodule TypsterTest do
 
     test "renders with variables" do
       variables = %{content: "PNG Content"}
-      assert {:ok, png_pages} = Typster.render_png("= #content", variables)
+      assert {:ok, png_pages} = Typster.render_png("= #content", variables: variables)
       assert length(png_pages) == 1
     end
   end
@@ -193,7 +193,10 @@ defmodule TypsterTest do
 
     test "passes variables to render functions" do
       template = "= Title: #title"
-      assert :ok = Typster.render_to_file(template, "test_output.pdf", %{title: "Test"})
+
+      assert :ok =
+               Typster.render_to_file(template, "test_output.pdf", variables: %{title: "Test"})
+
       assert File.exists?("test_output.pdf")
     end
 
@@ -273,7 +276,7 @@ defmodule TypsterTest do
         }
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
 
@@ -289,7 +292,7 @@ defmodule TypsterTest do
         items: ["Apple", "Banana", "Cherry"]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
   end
@@ -306,7 +309,7 @@ defmodule TypsterTest do
         status: "Published"
       }
 
-      assert :ok = Typster.check(@template_with_vars, variables)
+      assert :ok = Typster.check(@template_with_vars, variables: variables)
     end
 
     test "returns error for invalid template" do
@@ -332,7 +335,7 @@ defmodule TypsterTest do
     end
 
     test "accepts package_paths option" do
-      assert :ok = Typster.check(@simple_template, %{}, package_paths: [])
+      assert :ok = Typster.check(@simple_template, package_paths: [])
     end
 
     test "validates template with nested variables" do
@@ -348,7 +351,7 @@ defmodule TypsterTest do
         }
       }
 
-      assert :ok = Typster.check(template, variables)
+      assert :ok = Typster.check(template, variables: variables)
     end
 
     test "validates template with arrays" do
@@ -362,7 +365,7 @@ defmodule TypsterTest do
         items: ["Apple", "Banana"]
       }
 
-      assert :ok = Typster.check(template, variables)
+      assert :ok = Typster.check(template, variables: variables)
     end
   end
 
@@ -389,7 +392,7 @@ defmodule TypsterTest do
 
     test "works with variables" do
       variables = %{title: "Test"}
-      assert :ok = Typster.check!("= #title", variables)
+      assert :ok = Typster.check!("= #title", variables: variables)
     end
   end
 end

@@ -28,7 +28,7 @@ defmodule Typster.PropertyTest do
       template = "Value: #num"
       variables = %{num: number}
 
-      case Typster.render_pdf(template, variables) do
+      case Typster.render_pdf(template, variables: variables) do
         {:ok, pdf} ->
           assert is_binary(pdf)
 
@@ -61,7 +61,7 @@ defmodule Typster.PropertyTest do
             end)
         end
 
-      case Typster.render_pdf(template, map) do
+      case Typster.render_pdf(template, variables: map) do
         {:ok, pdf} ->
           assert is_binary(pdf)
 
@@ -101,7 +101,7 @@ defmodule Typster.PropertyTest do
 
       variables = %{items: items}
 
-      case Typster.render_pdf(template, variables) do
+      case Typster.render_pdf(template, variables: variables) do
         {:ok, pdf} ->
           assert is_binary(pdf)
 
@@ -123,7 +123,7 @@ defmodule Typster.PropertyTest do
         author: author
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, %{}, metadata: metadata)
+      assert {:ok, pdf} = Typster.render_pdf(template, metadata: metadata)
       assert is_binary(pdf)
     end
   end
@@ -132,7 +132,7 @@ defmodule Typster.PropertyTest do
     check all(resolution <- float(min: 1.0, max: 8.0)) do
       template = "= Test"
 
-      assert {:ok, png_pages} = Typster.render_png(template, %{}, pixel_per_pt: resolution)
+      assert {:ok, png_pages} = Typster.render_png(template, pixel_per_pt: resolution)
       assert length(png_pages) == 1
 
       png = List.first(png_pages)

@@ -3,7 +3,7 @@ mod packages;
 mod world;
 
 use rustler::types::Binary;
-use rustler::{Env, Error as RustlerError, OwnedBinary, Term};
+use rustler::{Env, Error as RustlerError, NifStruct, OwnedBinary, Term};
 use std::collections::HashMap;
 use std::fmt;
 use typst::layout::PagedDocument;
@@ -18,6 +18,17 @@ pub enum TypstError {
     PackageError(String),
     IoError(String),
     InvalidInput(String),
+}
+
+/// Options for configuring Typster compilation
+#[derive(NifStruct)]
+#[module = "Typster.Native.TypsterOptions"]
+struct TypsterOptions<'a> {
+    metadata: HashMap<String, String>,
+    pixel_per_pt: f32,
+    package_paths: Vec<String>,
+    root_path: String,
+    variables: Term<'a>,
 }
 
 impl fmt::Display for TypstError {
@@ -78,7 +89,10 @@ fn generate_document_metadata(metadata: std::collections::HashMap<String, String
     }
 
     if let Some(description) = metadata.get("description") {
-        parts.push(format!("description: \"{}\"", description.replace("\"", "\\\"")));
+        parts.push(format!(
+            "description: \"{}\"",
+            description.replace("\"", "\\\"")
+        ));
     }
 
     if let Some(keywords) = metadata.get("keywords") {
@@ -110,159 +124,23 @@ fn generate_document_metadata(metadata: std::collections::HashMap<String, String
     }
 }
 
-// Placeholder NIF function - will be replaced with actual implementation
-#[rustler::nif]
-fn test_nif() -> String {
-    "Typster NIF loaded successfully".to_string()
-}
-
-/// Compile a Typst template to PDF
-#[rustler::nif]
-fn compile_to_pdf<'a>(env: Env<'a>, source: String) -> Result<Binary<'a>, String> {
-    // Create the world with the source code
-    let world = TypstWorld::new(source)
-        .map_err(|e| format!("Failed to create world: {}", e))?;
-
-    // Compile the document
-    let document = typst::compile(&world)
-        .output
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("Compilation failed: {}", error_messages.join(", "))
-        })?;
-
-    // Render to PDF with default options
-    let pdf_options = typst_pdf::PdfOptions::default();
-    let pdf_bytes = typst_pdf::pdf(&document, &pdf_options)
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("PDF generation failed: {}", error_messages.join(", "))
-        })?;
-
-    // Convert Vec<u8> to Binary
-    let mut binary = OwnedBinary::new(pdf_bytes.len()).unwrap();
-    binary.as_mut_slice().copy_from_slice(&pdf_bytes);
-
-    Ok(binary.release(env))
-}
-
-/// Compile a Typst template to PDF with variables
-#[rustler::nif]
-fn compile_to_pdf_with_variables<'a>(env: Env<'a>, source: String, variables: Term<'a>) -> Result<Binary<'a>, String> {
-    // Convert Elixir variables to Typst Dict
-    let var_dict = convert::terms_to_dict(env, variables)
-        .map_err(|e| format!("Failed to convert variables: {}", e))?;
-
-    // Create the world with the source code and variables
-    let world = TypstWorld::new_with_variables(source, var_dict)
-        .map_err(|e| format!("Failed to create world: {}", e))?;
-
-    // Compile the document
-    let document = typst::compile(&world)
-        .output
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("Compilation failed: {}", error_messages.join(", "))
-        })?;
-
-    // Render to PDF with default options
-    let pdf_options = typst_pdf::PdfOptions::default();
-    let pdf_bytes = typst_pdf::pdf(&document, &pdf_options)
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("PDF generation failed: {}", error_messages.join(", "))
-        })?;
-
-    // Convert Vec<u8> to Binary
-    let mut binary = OwnedBinary::new(pdf_bytes.len()).unwrap();
-    binary.as_mut_slice().copy_from_slice(&pdf_bytes);
-
-    Ok(binary.release(env))
-}
-
-/// Compile a Typst template to PDF with variables and package paths
-#[rustler::nif]
-fn compile_to_pdf_with_options<'a>(
+fn world_from_options<'a>(
     env: Env<'a>,
     source: String,
-    variables: Term<'a>,
-    package_paths: Vec<String>,
-) -> Result<Binary<'a>, String> {
-    // Convert Elixir variables to Typst Dict
-    let var_dict = convert::terms_to_dict(env, variables)
-        .map_err(|e| format!("Failed to convert variables: {}", e))?;
-
-    // Convert package path strings to PathBufs
-    let paths: Vec<std::path::PathBuf> = package_paths
-        .into_iter()
-        .map(std::path::PathBuf::from)
-        .collect();
-
-    // Create the world with the source code, variables, and package paths
-    let world = TypstWorld::new_with_options(source, var_dict, paths)
-        .map_err(|e| format!("Failed to create world: {}", e))?;
-
-    // Compile the document
-    let document = typst::compile(&world)
-        .output
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("Compilation failed: {}", error_messages.join(", "))
-        })?;
-
-    // Render to PDF with default options
-    let pdf_options = typst_pdf::PdfOptions::default();
-    let pdf_bytes = typst_pdf::pdf(&document, &pdf_options)
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("PDF generation failed: {}", error_messages.join(", "))
-        })?;
-
-    // Convert Vec<u8> to Binary
-    let mut binary = OwnedBinary::new(pdf_bytes.len()).unwrap();
-    binary.as_mut_slice().copy_from_slice(&pdf_bytes);
-
-    Ok(binary.release(env))
-}
-
-/// Compile a Typst template to PDF with full options including metadata
-#[rustler::nif]
-fn compile_to_pdf_with_full_options<'a>(
-    env: Env<'a>,
-    source: String,
-    variables: Term<'a>,
-    package_paths: Vec<String>,
-    metadata: HashMap<String, String>,
-) -> Result<Binary<'a>, String> {
+    options: &TypsterOptions<'a>,
+) -> TypstResult<TypstWorld> {
     // Generate metadata statement
-    let metadata_stmt = generate_document_metadata(metadata);
+    let metadata_stmt = generate_document_metadata(options.metadata.clone());
 
     // Convert Elixir variables to Typst Dict
-    let var_dict = convert::terms_to_dict(env, variables)
-        .map_err(|e| format!("Failed to convert variables: {}", e))?;
+    let var_dict = convert::terms_to_dict(env, options.variables.clone())
+        .map_err(|e| TypstError::InvalidInput(format!("Failed to convert variables: {}", e)))?;
 
     // Convert package path strings to PathBufs
-    let paths: Vec<std::path::PathBuf> = package_paths
-        .into_iter()
-        .map(std::path::PathBuf::from)
+    let paths: Vec<std::path::PathBuf> = options
+        .package_paths
+        .iter()
+        .map(|p| std::path::PathBuf::from(p))
         .collect();
 
     // Prepend metadata to source
@@ -272,31 +150,45 @@ fn compile_to_pdf_with_full_options<'a>(
         format!("{}{}", metadata_stmt, source)
     };
 
+    // Convert root path string to PathBuf
+    let root_path = std::path::PathBuf::from(options.root_path.clone());
+
     // Create the world with the full source code, variables, and package paths
-    let world = TypstWorld::new_with_options(full_source, var_dict, paths)
+    let world = TypstWorld::new(full_source, var_dict, paths, root_path)
+        .map_err(|e| TypstError::CompileError(format!("Failed to create world: {}", e)))?;
+
+    Ok(world)
+}
+
+// Placeholder NIF function - will be replaced with actual implementation
+#[rustler::nif]
+fn test_nif() -> String {
+    "Typster NIF loaded successfully".to_string()
+}
+
+/// Compile a Typst template to PDF with options
+#[rustler::nif]
+fn compile_to_pdf<'a>(
+    env: Env<'a>,
+    source: String,
+    options: TypsterOptions<'a>,
+) -> Result<Binary<'a>, String> {
+    // Create the world with the source code and options
+    let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
 
     // Compile the document
-    let document = typst::compile(&world)
-        .output
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("Compilation failed: {}", error_messages.join(", "))
-        })?;
+    let document = typst::compile(&world).output.map_err(|errors| {
+        let error_messages: Vec<String> = errors.iter().map(|e| format!("{:?}", e)).collect();
+        format!("Compilation failed: {}", error_messages.join(", "))
+    })?;
 
     // Render to PDF with default options
     let pdf_options = typst_pdf::PdfOptions::default();
-    let pdf_bytes = typst_pdf::pdf(&document, &pdf_options)
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("PDF generation failed: {}", error_messages.join(", "))
-        })?;
+    let pdf_bytes = typst_pdf::pdf(&document, &pdf_options).map_err(|errors| {
+        let error_messages: Vec<String> = errors.iter().map(|e| format!("{:?}", e)).collect();
+        format!("PDF generation failed: {}", error_messages.join(", "))
+    })?;
 
     // Convert Vec<u8> to Binary
     let mut binary = OwnedBinary::new(pdf_bytes.len()).unwrap();
@@ -307,36 +199,20 @@ fn compile_to_pdf_with_full_options<'a>(
 
 /// Compile a Typst template to SVG
 #[rustler::nif]
-fn compile_to_svg_with_options<'a>(
+fn compile_to_svg<'a>(
     env: Env<'a>,
     source: String,
-    variables: Term<'a>,
-    package_paths: Vec<String>,
+    options: TypsterOptions<'a>,
 ) -> Result<Vec<String>, String> {
-    // Convert Elixir variables to Typst Dict
-    let var_dict = convert::terms_to_dict(env, variables)
-        .map_err(|e| format!("Failed to convert variables: {}", e))?;
-
-    // Convert package path strings to PathBufs
-    let paths: Vec<std::path::PathBuf> = package_paths
-        .into_iter()
-        .map(std::path::PathBuf::from)
-        .collect();
-
-    // Create the world with the source code, variables, and package paths
-    let world = TypstWorld::new_with_options(source, var_dict, paths)
+    // Create the world with the source code and options
+    let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
 
     // Compile the document
-    let document: PagedDocument = typst::compile(&world)
-        .output
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("Compilation failed: {}", error_messages.join(", "))
-        })?;
+    let document: PagedDocument = typst::compile(&world).output.map_err(|errors| {
+        let error_messages: Vec<String> = errors.iter().map(|e| format!("{:?}", e)).collect();
+        format!("Compilation failed: {}", error_messages.join(", "))
+    })?;
 
     // Render each page to SVG
     let mut svg_pages = Vec::new();
@@ -350,43 +226,27 @@ fn compile_to_svg_with_options<'a>(
 
 /// Compile a Typst template to PNG with options
 #[rustler::nif]
-fn compile_to_png_with_options<'a>(
+fn compile_to_png<'a>(
     env: Env<'a>,
     source: String,
-    variables: Term<'a>,
-    package_paths: Vec<String>,
-    pixel_per_pt: f32,
+    options: TypsterOptions<'a>,
 ) -> Result<Vec<Binary<'a>>, String> {
-    // Convert Elixir variables to Typst Dict
-    let var_dict = convert::terms_to_dict(env, variables)
-        .map_err(|e| format!("Failed to convert variables: {}", e))?;
-
-    // Convert package path strings to PathBufs
-    let paths: Vec<std::path::PathBuf> = package_paths
-        .into_iter()
-        .map(std::path::PathBuf::from)
-        .collect();
-
-    // Create the world with the source code, variables, and package paths
-    let world = TypstWorld::new_with_options(source, var_dict, paths)
+    // Create the world with the source code and options
+    let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
 
     // Compile the document
-    let document: PagedDocument = typst::compile(&world)
-        .output
-        .map_err(|errors| {
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
-            format!("Compilation failed: {}", error_messages.join(", "))
-        })?;
+    let document: PagedDocument = typst::compile(&world).output.map_err(|errors| {
+        let error_messages: Vec<String> = errors.iter().map(|e| format!("{:?}", e)).collect();
+        format!("Compilation failed: {}", error_messages.join(", "))
+    })?;
 
     // Render each page to PNG
     let mut png_pages = Vec::new();
     for page in document.pages.iter() {
-        let pixmap = typst_render::render(page, pixel_per_pt);
-        let png_bytes = pixmap.encode_png()
+        let pixmap = typst_render::render(page, options.pixel_per_pt);
+        let png_bytes = pixmap
+            .encode_png()
             .map_err(|e| format!("PNG encoding failed: {}", e))?;
 
         // Convert to Binary
@@ -404,21 +264,10 @@ fn compile_to_png_with_options<'a>(
 fn check_syntax<'a>(
     env: Env<'a>,
     source: String,
-    variables: Term<'a>,
-    package_paths: Vec<String>,
+    options: TypsterOptions<'a>,
 ) -> Result<Vec<String>, String> {
-    // Convert Elixir variables to Typst Dict
-    let var_dict = convert::terms_to_dict(env, variables)
-        .map_err(|e| format!("Failed to convert variables: {}", e))?;
-
-    // Convert package path strings to PathBufs
-    let paths: Vec<std::path::PathBuf> = package_paths
-        .into_iter()
-        .map(std::path::PathBuf::from)
-        .collect();
-
-    // Create the world with the source code, variables, and package paths
-    let world = TypstWorld::new_with_options(source, var_dict, paths)
+    // Create the world with the source code and options
+    let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
 
     // Attempt to compile the document
@@ -426,10 +275,7 @@ fn check_syntax<'a>(
         Ok(_) => Ok(Vec::new()), // Success - return empty list
         Err(errors) => {
             // Extract error messages
-            let error_messages: Vec<String> = errors
-                .iter()
-                .map(|e| format!("{:?}", e))
-                .collect();
+            let error_messages: Vec<String> = errors.iter().map(|e| format!("{:?}", e)).collect();
             Ok(error_messages) // Return list of errors
         }
     }

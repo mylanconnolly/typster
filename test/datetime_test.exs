@@ -19,7 +19,7 @@ defmodule Typster.DatetimeTest do
         date: ~D[2025-10-03]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert byte_size(pdf) > 1000
     end
@@ -35,7 +35,7 @@ defmodule Typster.DatetimeTest do
         invoice_date: ~D[2025-12-25]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
 
@@ -53,7 +53,7 @@ defmodule Typster.DatetimeTest do
         end_date: ~D[2025-12-31]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
   end
@@ -74,7 +74,7 @@ defmodule Typster.DatetimeTest do
         dt: dt
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert byte_size(pdf) > 1000
     end
@@ -92,7 +92,7 @@ defmodule Typster.DatetimeTest do
         timestamp: dt
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
 
@@ -107,7 +107,7 @@ defmodule Typster.DatetimeTest do
         created_at: DateTime.utc_now()
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
   end
@@ -126,7 +126,7 @@ defmodule Typster.DatetimeTest do
         event_time: ~N[2025-10-03 14:30:00]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert byte_size(pdf) > 1000
     end
@@ -145,7 +145,7 @@ defmodule Typster.DatetimeTest do
         end_time: ~N[2025-10-03 17:00:00]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
   end
@@ -170,7 +170,7 @@ defmodule Typster.DatetimeTest do
         created_at: created
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
 
@@ -192,7 +192,7 @@ defmodule Typster.DatetimeTest do
         date: ~D[2025-10-03]
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
   end
@@ -227,7 +227,7 @@ defmodule Typster.DatetimeTest do
         amount: "1,234.56"
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert byte_size(pdf) > 2000
     end
@@ -257,7 +257,7 @@ defmodule Typster.DatetimeTest do
         modified_at: modified
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert byte_size(pdf) > 2000
     end

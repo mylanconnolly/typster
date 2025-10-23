@@ -124,8 +124,12 @@ fn convert_date_to_datetime(map: &HashMap<String, Term>) -> Result<Value, TypstE
         .ok_or_else(|| TypstError::InvalidInput("Date missing day field".to_string()))?;
 
     // Create a Typst Datetime with just the date components
-    let datetime = Datetime::from_ymd(year as i32, month as u8, day as u8)
-        .ok_or_else(|| TypstError::InvalidInput(format!("Invalid date values: year={}, month={}, day={}", year, month, day)))?;
+    let datetime = Datetime::from_ymd(year as i32, month as u8, day as u8).ok_or_else(|| {
+        TypstError::InvalidInput(format!(
+            "Invalid date values: year={}, month={}, day={}",
+            year, month, day
+        ))
+    })?;
 
     Ok(Value::Datetime(datetime))
 }
