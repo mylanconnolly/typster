@@ -80,7 +80,7 @@ variables = %{
   amount: 1234.56
 }
 
-{:ok, pdf} = Typster.render_pdf(template, variables)
+{:ok, pdf} = Typster.render_pdf(template, variables: variables)
 ```
 
 ### Nested Data Structures
@@ -104,7 +104,7 @@ variables = %{
   }
 }
 
-{:ok, pdf} = Typster.render_pdf(template, variables)
+{:ok, pdf} = Typster.render_pdf(template, variables: variables)
 ```
 
 ### Lists and Iteration
@@ -128,7 +128,7 @@ variables = %{
   ]
 }
 
-{:ok, pdf} = Typster.render_pdf(template, variables)
+{:ok, pdf} = Typster.render_pdf(template, variables: variables)
 ```
 
 ### PDF Metadata
@@ -142,7 +142,7 @@ metadata = %{
   date: "auto"  # Use current date
 }
 
-{:ok, pdf} = Typster.render_pdf(template, variables, metadata: metadata)
+{:ok, pdf} = Typster.render_pdf(template, variables: variables, metadata: metadata)
 ```
 
 ### SVG and PNG Output
@@ -204,7 +204,7 @@ template = """
 # (raises Typster.CompileError on failure)
 
 try do
-  pdf = Typster.render_pdf!(template, variables)
+  pdf = Typster.render_pdf!(template, variables: variables)
   File.write!("output.pdf", pdf)
 rescue
   e in Typster.CompileError ->
@@ -216,17 +216,17 @@ end
 
 ### Core Functions
 
-- `Typster.render_pdf(source, variables \\ %{}, opts \\ [])` - Render to PDF
-- `Typster.render_svg(source, variables \\ %{}, opts \\ [])` - Render to SVG (multi-page)
-- `Typster.render_png(source, variables \\ %{}, opts \\ [])` - Render to PNG (multi-page)
-- `Typster.render_to_file(source, path, variables \\ %{}, opts \\ [])` - Save to file
+- `Typster.render_pdf(source, opts \\ [])` - Render to PDF
+- `Typster.render_svg(source, opts \\ [])` - Render to SVG (multi-page)
+- `Typster.render_png(source, opts \\ [])` - Render to PNG (multi-page)
+- `Typster.render_to_file(source, path, opts \\ [])` - Save to file
 
 ### Bang Variants
 
-- `Typster.render_pdf!(source, variables \\ %{}, opts \\ [])` - Raises on error
-- `Typster.render_svg!(source, variables \\ %{}, opts \\ [])` - Raises on error
-- `Typster.render_png!(source, variables \\ %{}, opts \\ [])` - Raises on error
-- `Typster.render_to_file!(source, path, variables \\ %{}, opts \\ [])` - Raises on error
+- `Typster.render_pdf!(source, opts \\ [])` - Raises on error
+- `Typster.render_svg!(source, opts \\ [])` - Raises on error
+- `Typster.render_png!(source, opts \\ [])` - Raises on error
+- `Typster.render_to_file!(source, path, opts \\ [])` - Raises on error
 
 ### Options
 
@@ -235,6 +235,7 @@ All render functions accept the following options:
 - `:metadata` - Map of PDF metadata (`%{title:, author:, description:, keywords:, date:}`)
 - `:package_paths` - List of local package directories (for custom packages)
 - `:pixel_per_pt` - PNG resolution multiplier (default: `2.0`, higher = better quality)
+- `:variables` - Map of variables to be used in the template
 
 ## Examples
 
@@ -292,7 +293,7 @@ Typster is **fully thread-safe** and designed for concurrent use:
 tasks = for i <- 1..10 do
   Task.async(fn ->
     template = get_template(i)
-    Typster.render_pdf(template, %{id: i})
+    Typster.render_pdf(template, variables: %{id: i})
   end)
 end
 

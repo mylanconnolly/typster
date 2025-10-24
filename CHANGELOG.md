@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-10-24
+
+### Breaking Changes
+- **This changes the API for the `Typster` module.**. The `render_pdf`,
+  `render_png`, and `render_svg` functions no longer have 3 arguments. They now
+  accept a template string and an options keyword list. To pass variables to the
+  render functions, you would use the `variables` keyword argument. An example
+  is listed below:
+
+```elixir
+# Before:
+Typster.render_pdf("Hello, #name!", %{name: "Alice"})
+
+# Now:
+Typster.render_pdf("Hello, #name!", variables: %{name: "Alice"})
+```
+
+
+### Added
+- **Support system fonts** by using [typst_kit](https://docs.rs/typst-kit/latest/typst_kit/) (thanks [gf3](https://github.com/gf3)!)
+- **Enable embedding files** by supplying the root_path option (thanks [gf3](https://github.com/gf3)!)
+
+### Changed
+- **Significant code deduplication** (thanks [gf3](https://github.com/gf3)!)
+
 ## [0.4.0] - 2025-10-20
 
 ### Added

@@ -8,16 +8,16 @@ Typster is an Elixir wrapper for the Typst document preparation system. It provi
 
 ```elixir
 # PDF rendering (returns single binary)
-{:ok, pdf} = Typster.render_pdf(source, variables \\ %{}, opts \\ [])
+{:ok, pdf} = Typster.render_pdf(source)
 
 # SVG rendering (returns list of strings, one per page)
-{:ok, svg_pages} = Typster.render_svg(source, variables \\ %{}, opts \\ [])
+{:ok, svg_pages} = Typster.render_svg(source)
 
 # PNG rendering (returns list of binaries, one per page)
-{:ok, png_pages} = Typster.render_png(source, variables \\ %{}, opts \\ [])
+{:ok, png_pages} = Typster.render_png(source)
 
 # Save to file (format determined by extension: .pdf, .svg, .png)
-:ok = Typster.render_to_file(source, path, variables \\ %{}, opts \\ [])
+:ok = Typster.render_to_file(source, path)
 ```
 
 ### Bang Variants
@@ -33,7 +33,24 @@ png_pages = Typster.render_png!(source, variables, opts)
 
 ## Parameters
 
-### Variables
+### Options
+
+**All render functions** accept these options in the `opts` keyword list:
+
+- `:package_paths` - List of local package directory paths (default: `[]`)
+- `:metadata` - Map of PDF metadata (PDF only, default: `%{}`)
+- `:pixel_per_pt` - PNG resolution multiplier (PNG only, default: `2.0`)
+- `:root_path` - Root path for relative paths
+- `:variables` - Map of variables for interpolation (explained below)
+
+**Metadata map keys** (all optional, PDF rendering only):
+- `:title` - Document title
+- `:author` - Author name
+- `:description` - Document description
+- `:keywords` - Comma-separated keywords
+- `:date` - Date string (use `"auto"` for current date)
+
+#### Variables
 
 - Can be maps with atom or string keys
 - Supports nested maps and lists for complex data structures
@@ -61,21 +78,6 @@ variables = %{
   ]
 }
 ```
-
-### Options
-
-**All render functions** accept these options in the `opts` keyword list:
-
-- `:package_paths` - List of local package directory paths (default: `[]`)
-- `:metadata` - Map of PDF metadata (PDF only, default: `%{}`)
-- `:pixel_per_pt` - PNG resolution multiplier (PNG only, default: `2.0`)
-
-**Metadata map keys** (all optional, PDF rendering only):
-- `:title` - Document title
-- `:author` - Author name
-- `:description` - Document description
-- `:keywords` - Comma-separated keywords
-- `:date` - Date string (use `"auto"` for current date)
 
 ```elixir
 # PDF with metadata
@@ -219,7 +221,7 @@ Raise `Typster.CompileError` on failure:
 
 ```elixir
 try do
-  pdf = Typster.render_pdf!(template, variables)
+  pdf = Typster.render_pdf!(template, variables: variables)
   File.write!("output.pdf", pdf)
 rescue
   e in Typster.CompileError ->
@@ -241,20 +243,24 @@ end
 ## Type Specifications
 
 ```elixir
-@type variables :: map()
 @type metadata :: %{
-  optional(:title) => String.t(),
-  optional(:author) => String.t(),
-  optional(:description) => String.t(),
-  optional(:keywords) => String.t(),
-  optional(:date) => String.t()
-}
+        optional(:title) => String.t(),
+        optional(:author) => String.t(),
+        optional(:description) => String.t(),
+        optional(:keywords) => String.t(),
+        optional(:date) => String.t()
+      }
+@type package_paths :: [String.t()]
+@type root_path :: String.t()
+@type variables :: map()
 @type render_options :: [
-  variables: variables(),
-  package_paths: [String.t()],
-  metadata: metadata(),
-  pixel_per_pt: float()
-]
+        metadata: metadata(),
+        package_paths: package_paths(),
+        pixel_per_pt: float(),
+        root_path: root_path(),
+        variables: variables()
+      ]
+
 @type pdf_binary :: binary()
 @type svg_pages :: [String.t()]
 @type png_pages :: [binary()]

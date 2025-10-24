@@ -119,7 +119,7 @@ IO.puts("Generating multi-page report in multiple formats...")
 IO.puts("")
 
 # PDF
-case Typster.render_pdf(template, variables) do
+case Typster.render_pdf(template, variables: variables) do
   {:ok, pdf} ->
     File.write!("report_example.pdf", pdf)
     IO.puts("PDF: report_example.pdf (#{byte_size(pdf)} bytes)")
@@ -129,7 +129,7 @@ case Typster.render_pdf(template, variables) do
 end
 
 # SVG (multi-page)
-case Typster.render_svg(template, variables) do
+case Typster.render_svg(template, variables: variables) do
   {:ok, svg_pages} ->
     IO.puts("SVG: #{length(svg_pages)} pages")
 
@@ -146,7 +146,7 @@ case Typster.render_svg(template, variables) do
 end
 
 # PNG (first page only, high resolution)
-case Typster.render_png(template, variables, pixel_per_pt: 4.0) do
+case Typster.render_png(template, variables: variables, pixel_per_pt: 4.0) do
   {:ok, png_pages} ->
     first_page = List.first(png_pages)
     File.write!("report_example_page_1.png", first_page)

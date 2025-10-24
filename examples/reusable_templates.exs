@@ -176,7 +176,7 @@ IO.puts("Generating Contract Amendment Letter...")
 
 variables_1 = Map.merge(client_data, recipient_data)
 
-case Typster.render_pdf(letter_template_1, variables_1) do
+case Typster.render_pdf(letter_template_1, variables: variables_1) do
   {:ok, pdf} ->
     File.write!("letter_contract_amendment.pdf", pdf)
     IO.puts("Generated: letter_contract_amendment.pdf (#{byte_size(pdf)} bytes)")
@@ -199,7 +199,7 @@ variables_2 =
     payment_days: "10"
   })
 
-case Typster.render_pdf(letter_template_2, variables_2) do
+case Typster.render_pdf(letter_template_2, variables: variables_2) do
   {:ok, pdf} ->
     File.write!("letter_payment_reminder.pdf", pdf)
     IO.puts("Generated: letter_payment_reminder.pdf (#{byte_size(pdf)} bytes)")

@@ -75,7 +75,7 @@ IO.puts("Generating document with QR codes and barcodes...")
 IO.puts("(This will download the tiaoma package if not cached)")
 IO.puts("")
 
-case Typster.render_pdf(template, variables) do
+case Typster.render_pdf(template, variables: variables) do
   {:ok, pdf} ->
     filename = "qrcode_example.pdf"
     File.write!(filename, pdf)

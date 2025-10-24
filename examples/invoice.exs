@@ -98,7 +98,7 @@ metadata = %{
 # Generate the invoice
 IO.puts("Generating invoice...")
 
-case Typster.render_pdf(template, variables, metadata: metadata) do
+case Typster.render_pdf(template, variables: variables, metadata: metadata) do
   {:ok, pdf} ->
     filename = "invoice_example.pdf"
     File.write!(filename, pdf)

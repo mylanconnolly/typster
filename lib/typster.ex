@@ -201,7 +201,7 @@ defmodule Typster do
       {:ok, png_pages} = Typster.render_png("= Hello World")
 
       # High resolution
-      {:ok, png_pages} = Typster.render_png(template, %{}, pixel_per_pt: 4.0)
+      {:ok, png_pages} = Typster.render_png(template, pixel_per_pt: 4.0)
 
       # Multi-page document
       template = "= Page 1\\n#pagebreak()\\n= Page 2"
@@ -245,8 +245,8 @@ defmodule Typster do
   ## Examples
 
       Typster.render_to_file(template, "output.pdf")
-      Typster.render_to_file(template, "output.svg", %{title: "Report"})
-      Typster.render_to_file(template, "output.png", %{}, pixel_per_pt: 4.0)
+      Typster.render_to_file(template, "output.svg", variables: %{title: "Report"})
+      Typster.render_to_file(template, "output.png", pixel_per_pt: 4.0)
   """
   @spec render_to_file(String.t(), String.t(), render_options()) ::
           :ok | {:error, String.t()}
