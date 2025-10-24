@@ -35,3 +35,6 @@ typster-*.tar
 priv/native/*.so
 checksum-*exs
 /native/typster_nif/target
+
+# Direnv
+.direnv/
