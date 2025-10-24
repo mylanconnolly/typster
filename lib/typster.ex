@@ -59,8 +59,6 @@ defmodule Typster do
 
   alias Typster.Native
 
-  @type variables :: map()
-  @type package_paths :: [String.t()]
   @type metadata :: %{
           optional(:title) => String.t(),
           optional(:author) => String.t(),
@@ -68,11 +66,15 @@ defmodule Typster do
           optional(:keywords) => String.t(),
           optional(:date) => String.t()
         }
+  @type package_paths :: [String.t()]
+  @type root_path :: String.t()
+  @type variables :: map()
   @type render_options :: [
-          variables: variables(),
-          package_paths: package_paths(),
           metadata: metadata(),
-          pixel_per_pt: float()
+          package_paths: package_paths(),
+          pixel_per_pt: float(),
+          root_path: root_path(),
+          variables: variables()
         ]
 
   @type pdf_binary :: binary()
@@ -86,12 +88,13 @@ defmodule Typster do
 
   ## Parameters
   - `source` - The Typst template source code
-  - `variables` - Map of variables to bind (default: %{})
   - `opts` - Keyword list of options
 
   ## Options
-  - `:package_paths` - List of local package directories (default: [])
   - `:metadata` - Map of PDF metadata (default: %{})
+  - `:package_paths` - List of local package directories (default: [])
+  - `:root_path` - Root path for resolving relative imports (default: ".")
+  - `:variables` - Map of variables to bind (default: %{})
 
   ## Examples
 
@@ -100,38 +103,36 @@ defmodule Typster do
 
       # With variables
       template = "= Report for #year"
-      {:ok, pdf} = Typster.render_pdf(template, %{year: 2025})
+      {:ok, pdf} = Typster.render_pdf(template, variables: %{year: 2025})
 
       # With metadata
       {:ok, pdf} = Typster.render_pdf(
         template,
-        %{year: 2025},
+        variables: %{year: 2025},
         metadata: %{title: "Annual Report", author: "Corp"}
       )
 
       # With packages
       template = ~S(#import "@preview/tiaoma:0.3.0": qrcode
       #qrcode("https://example.com"))
-      {:ok, pdf} = Typster.render_pdf(template, %{}, package_paths: [])
+      {:ok, pdf} = Typster.render_pdf(template, package_paths: [])
   """
-  @spec render_pdf(String.t(), variables(), render_options()) ::
+  @spec render_pdf(String.t(), render_options()) ::
           {:ok, pdf_binary()} | {:error, String.t()}
-  def render_pdf(source, variables \\ %{}, opts \\ []) do
+  def render_pdf(source, opts \\ []) do
+    metadata = Keyword.get(opts, :metadata, %{}) |> stringify_keys()
     package_paths = Keyword.get(opts, :package_paths, [])
-    metadata = Keyword.get(opts, :metadata, %{})
+    root_path = Keyword.get(opts, :root_path, ".")
+    variables = Keyword.get(opts, :variables, %{}) |> stringify_keys()
 
-    # Convert atom keys to strings for variables
-    string_vars = stringify_keys(variables)
+    options = %Native.TypsterOptions{
+      metadata: metadata,
+      package_paths: package_paths,
+      root_path: root_path,
+      variables: variables
+    }
 
-    # Convert atom keys to strings for metadata
-    string_metadata = stringify_keys(metadata)
-
-    case Native.compile_to_pdf_with_full_options(
-           source,
-           string_vars,
-           package_paths,
-           string_metadata
-         ) do
+    case Native.compile_to_pdf(source, options) do
       {:ok, pdf} -> {:ok, pdf}
       {:error, reason} -> {:error, reason}
     end
@@ -144,11 +145,12 @@ defmodule Typster do
 
   ## Parameters
   - `source` - The Typst template source code
-  - `variables` - Map of variables to bind (default: %{})
   - `opts` - Keyword list of options
 
   ## Options
   - `:package_paths` - List of local package directories (default: [])
+  - `:root_path` - Root path for resolving relative imports (default: ".")
+  - `:variables` - Map of variables to bind (default: %{})
 
   ## Examples
 
@@ -159,13 +161,21 @@ defmodule Typster do
       template = "= Page 1\\n#pagebreak()\\n= Page 2"
       {:ok, [svg1, svg2]} = Typster.render_svg(template)
   """
-  @spec render_svg(String.t(), variables(), render_options()) ::
+  @spec render_svg(String.t(), render_options()) ::
           {:ok, svg_pages()} | {:error, String.t()}
-  def render_svg(source, variables \\ %{}, opts \\ []) do
+  def render_svg(source, opts \\ []) do
     package_paths = Keyword.get(opts, :package_paths, [])
-    string_vars = stringify_keys(variables)
+    root_path = Keyword.get(opts, :root_path, ".")
+    variables = Keyword.get(opts, :variables, %{}) |> stringify_keys()
 
-    case Native.compile_to_svg_with_options(source, string_vars, package_paths) do
+    options = %Typster.Native.TypsterOptions{
+      metadata: %{},
+      package_paths: package_paths,
+      root_path: root_path,
+      variables: variables
+    }
+
+    case Native.compile_to_svg(source, options) do
       {:ok, svg_pages} -> {:ok, svg_pages}
       {:error, reason} -> {:error, reason}
     end
@@ -178,12 +188,13 @@ defmodule Typster do
 
   ## Parameters
   - `source` - The Typst template source code
-  - `variables` - Map of variables to bind (default: %{})
   - `opts` - Keyword list of options
 
   ## Options
   - `:package_paths` - List of local package directories (default: [])
   - `:pixel_per_pt` - Resolution in pixels per point (default: 2.0, higher = better quality)
+  - `:root_path` - Root path for resolving relative imports (default: ".")
+  - `:variables` - Map of variables to bind (default: %{})
 
   ## Examples
 
@@ -196,14 +207,23 @@ defmodule Typster do
       template = "= Page 1\\n#pagebreak()\\n= Page 2"
       {:ok, [png1, png2]} = Typster.render_png(template)
   """
-  @spec render_png(String.t(), variables(), render_options()) ::
+  @spec render_png(String.t(), render_options()) ::
           {:ok, png_pages()} | {:error, String.t()}
-  def render_png(source, variables \\ %{}, opts \\ []) do
+  def render_png(source, opts \\ []) do
     package_paths = Keyword.get(opts, :package_paths, [])
     pixel_per_pt = Keyword.get(opts, :pixel_per_pt, 2.0)
-    string_vars = stringify_keys(variables)
+    root_path = Keyword.get(opts, :root_path, ".")
+    variables = Keyword.get(opts, :variables, %{}) |> stringify_keys()
 
-    case Native.compile_to_png_with_options(source, string_vars, package_paths, pixel_per_pt) do
+    options = %Typster.Native.TypsterOptions{
+      metadata: %{},
+      package_paths: package_paths,
+      pixel_per_pt: pixel_per_pt,
+      root_path: root_path,
+      variables: variables
+    }
+
+    case Native.compile_to_png(source, options) do
       {:ok, png_pages} -> {:ok, png_pages}
       {:error, reason} -> {:error, reason}
     end
@@ -220,7 +240,6 @@ defmodule Typster do
   ## Parameters
   - `source` - The Typst template source code
   - `output_path` - Path to save the output file
-  - `variables` - Map of variables to bind (default: %{})
   - `opts` - Keyword list of options (same as format-specific functions)
 
   ## Examples
@@ -229,24 +248,24 @@ defmodule Typster do
       Typster.render_to_file(template, "output.svg", %{title: "Report"})
       Typster.render_to_file(template, "output.png", %{}, pixel_per_pt: 4.0)
   """
-  @spec render_to_file(String.t(), String.t(), variables(), render_options()) ::
+  @spec render_to_file(String.t(), String.t(), render_options()) ::
           :ok | {:error, String.t()}
-  def render_to_file(source, output_path, variables \\ %{}, opts \\ []) do
+  def render_to_file(source, output_path, opts \\ []) do
     extension = Path.extname(output_path) |> String.downcase()
 
     case extension do
       ".pdf" ->
-        with {:ok, pdf} <- render_pdf(source, variables, opts) do
+        with {:ok, pdf} <- render_pdf(source, opts) do
           File.write(output_path, pdf)
         end
 
       ".svg" ->
-        with {:ok, [svg | _]} <- render_svg(source, variables, opts) do
+        with {:ok, [svg | _]} <- render_svg(source, opts) do
           File.write(output_path, svg)
         end
 
       ".png" ->
-        with {:ok, [png | _]} <- render_png(source, variables, opts) do
+        with {:ok, [png | _]} <- render_png(source, opts) do
           File.write(output_path, png)
         end
 
@@ -264,11 +283,12 @@ defmodule Typster do
 
   ## Parameters
   - `source` - The Typst template source code
-  - `variables` - Map of variables to bind (default: %{})
   - `opts` - Keyword list of options
 
   ## Options
   - `:package_paths` - List of local package directories (default: [])
+  - `:root_path` - Root path for resolving relative imports (default: ".")
+  - `:variables` - Map of variables to bind (default: %{})
 
   ## Returns
   - `:ok` if the template syntax is valid
@@ -291,12 +311,20 @@ defmodule Typster do
       template = ~S(#import "@preview/tiaoma:0.3.0": qrcode)
       :ok = Typster.check(template, %{}, package_paths: [])
   """
-  @spec check(String.t(), variables(), render_options()) :: :ok | {:error, [String.t()]}
-  def check(source, variables \\ %{}, opts \\ []) do
+  @spec check(String.t(), render_options()) :: :ok | {:error, [String.t()]}
+  def check(source, opts \\ []) do
     package_paths = Keyword.get(opts, :package_paths, [])
-    string_vars = stringify_keys(variables)
+    root_path = Keyword.get(opts, :root_path, ".")
+    variables = Keyword.get(opts, :variables, %{}) |> stringify_keys()
 
-    case Native.check_syntax(source, string_vars, package_paths) do
+    options = %Typster.Native.TypsterOptions{
+      metadata: %{},
+      package_paths: package_paths,
+      root_path: root_path,
+      variables: variables
+    }
+
+    case Native.check_syntax(source, options) do
       {:ok, []} -> :ok
       {:ok, errors} -> {:error, errors}
       {:error, reason} -> {:error, [reason]}
@@ -321,9 +349,9 @@ defmodule Typster do
           IO.puts("Syntax error: \#{e.message}")
       end
   """
-  @spec check!(String.t(), variables(), render_options()) :: :ok
-  def check!(source, variables \\ %{}, opts \\ []) do
-    case check(source, variables, opts) do
+  @spec check!(String.t(), render_options()) :: :ok
+  def check!(source, opts \\ []) do
+    case check(source, opts) do
       :ok -> :ok
       {:error, errors} -> raise Typster.CompileError, message: Enum.join(errors, "\n")
     end
@@ -339,9 +367,9 @@ defmodule Typster do
       pdf = Typster.render_pdf!(template)
       pdf = Typster.render_pdf!(template, %{year: 2025})
   """
-  @spec render_pdf!(String.t(), variables(), render_options()) :: pdf_binary()
-  def render_pdf!(source, variables \\ %{}, opts \\ []) do
-    case render_pdf(source, variables, opts) do
+  @spec render_pdf!(String.t(), render_options()) :: pdf_binary()
+  def render_pdf!(source, opts \\ []) do
+    case render_pdf(source, opts) do
       {:ok, pdf} -> pdf
       {:error, reason} -> raise Typster.CompileError, message: reason
     end
@@ -352,9 +380,9 @@ defmodule Typster do
 
   Same as `render_svg/3` but raises `Typster.CompileError` on failure.
   """
-  @spec render_svg!(String.t(), variables(), render_options()) :: svg_pages()
-  def render_svg!(source, variables \\ %{}, opts \\ []) do
-    case render_svg(source, variables, opts) do
+  @spec render_svg!(String.t(), render_options()) :: svg_pages()
+  def render_svg!(source, opts \\ []) do
+    case render_svg(source, opts) do
       {:ok, svg_pages} -> svg_pages
       {:error, reason} -> raise Typster.CompileError, message: reason
     end
@@ -365,9 +393,9 @@ defmodule Typster do
 
   Same as `render_png/3` but raises `Typster.CompileError` on failure.
   """
-  @spec render_png!(String.t(), variables(), render_options()) :: png_pages()
-  def render_png!(source, variables \\ %{}, opts \\ []) do
-    case render_png(source, variables, opts) do
+  @spec render_png!(String.t(), render_options()) :: png_pages()
+  def render_png!(source, opts \\ []) do
+    case render_png(source, opts) do
       {:ok, png_pages} -> png_pages
       {:error, reason} -> raise Typster.CompileError, message: reason
     end
@@ -378,9 +406,9 @@ defmodule Typster do
 
   Same as `render_to_file/4` but raises on failure.
   """
-  @spec render_to_file!(String.t(), String.t(), variables(), render_options()) :: :ok
-  def render_to_file!(source, output_path, variables \\ %{}, opts \\ []) do
-    case render_to_file(source, output_path, variables, opts) do
+  @spec render_to_file!(String.t(), String.t(), render_options()) :: :ok
+  def render_to_file!(source, output_path, opts \\ []) do
+    case render_to_file(source, output_path, opts) do
       :ok -> :ok
       {:error, reason} -> raise Typster.CompileError, message: reason
     end

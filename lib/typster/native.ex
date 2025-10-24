@@ -1,3 +1,13 @@
+defmodule Typster.Native.TypsterOptions do
+  @moduledoc false
+
+  defstruct metadata: %{},
+            package_paths: [],
+            pixel_per_pt: 2.0,
+            root_path: ".",
+            variables: %{}
+end
+
 defmodule Typster.Native do
   @moduledoc """
   Native Implemented Functions (NIFs) for Typster.
@@ -42,20 +52,8 @@ defmodule Typster.Native do
   # If the NIF is not loaded, these fallback implementations will be called
 
   def test_nif, do: :erlang.nif_error(:nif_not_loaded)
-  def compile_to_pdf(_source), do: :erlang.nif_error(:nif_not_loaded)
-  def compile_to_pdf_with_variables(_source, _variables), do: :erlang.nif_error(:nif_not_loaded)
-
-  def compile_to_pdf_with_options(_source, _variables, _package_paths),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  def compile_to_pdf_with_full_options(_source, _variables, _package_paths, _metadata),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  def compile_to_svg_with_options(_source, _variables, _package_paths),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  def compile_to_png_with_options(_source, _variables, _package_paths, _pixel_per_pt),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  def check_syntax(_source, _variables, _package_paths), do: :erlang.nif_error(:nif_not_loaded)
+  def compile_to_pdf(_source, _opts), do: :erlang.nif_error(:nif_not_loaded)
+  def compile_to_svg(_source, _opts), do: :erlang.nif_error(:nif_not_loaded)
+  def compile_to_png(_source, _opts), do: :erlang.nif_error(:nif_not_loaded)
+  def check_syntax(_source, _opts), do: :erlang.nif_error(:nif_not_loaded)
 end

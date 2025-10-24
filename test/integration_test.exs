@@ -33,7 +33,7 @@ defmodule Typster.IntegrationTest do
     end
 
     test "renders invoice to PDF", %{template: template, variables: variables} do
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert String.starts_with?(pdf, "%PDF")
       # Invoice should be reasonable size
@@ -48,13 +48,13 @@ defmodule Typster.IntegrationTest do
       }
 
       assert {:ok, pdf} =
-               Typster.render_pdf(template, variables, metadata: metadata)
+               Typster.render_pdf(template, variables: variables, metadata: metadata)
 
       assert is_binary(pdf)
     end
 
     test "renders invoice to SVG", %{template: template, variables: variables} do
-      assert {:ok, svg_pages} = Typster.render_svg(template, variables)
+      assert {:ok, svg_pages} = Typster.render_svg(template, variables: variables)
       assert is_list(svg_pages)
       assert length(svg_pages) == 1
       # Invoice SVG should be reasonable size
@@ -62,7 +62,7 @@ defmodule Typster.IntegrationTest do
     end
 
     test "renders invoice to PNG", %{template: template, variables: variables} do
-      assert {:ok, png_pages} = Typster.render_png(template, variables)
+      assert {:ok, png_pages} = Typster.render_png(template, variables: variables)
       assert is_list(png_pages)
       assert length(png_pages) == 1
     end
@@ -112,7 +112,7 @@ defmodule Typster.IntegrationTest do
     end
 
     test "renders multi-page report to PDF", %{template: template, variables: variables} do
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
       assert String.starts_with?(pdf, "%PDF")
       # Multi-page report should be substantial
@@ -120,7 +120,7 @@ defmodule Typster.IntegrationTest do
     end
 
     test "renders report to multi-page SVG", %{template: template, variables: variables} do
-      assert {:ok, svg_pages} = Typster.render_svg(template, variables)
+      assert {:ok, svg_pages} = Typster.render_svg(template, variables: variables)
       assert is_list(svg_pages)
       # Report has pagebreaks, so should be multiple pages
       assert length(svg_pages) >= 2
@@ -135,7 +135,7 @@ defmodule Typster.IntegrationTest do
       }
 
       assert {:ok, pdf} =
-               Typster.render_pdf(template, variables, metadata: metadata)
+               Typster.render_pdf(template, variables: variables, metadata: metadata)
 
       assert is_binary(pdf)
     end
@@ -227,7 +227,7 @@ defmodule Typster.IntegrationTest do
         }
       }
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
 
@@ -246,7 +246,7 @@ defmodule Typster.IntegrationTest do
 
       variables = %{products: products}
 
-      assert {:ok, pdf} = Typster.render_pdf(template, variables)
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
   end

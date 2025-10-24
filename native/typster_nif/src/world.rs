@@ -38,21 +38,12 @@ pub struct TypstWorld {
 }
 
 impl TypstWorld {
-    /// Create a new TypstWorld with the given source code
-    pub fn new(source_code: String) -> Result<Self, TypstError> {
-        Self::new_with_variables(source_code, Dict::new())
-    }
-
-    /// Create a new TypstWorld with the given source code and variables
-    pub fn new_with_variables(source_code: String, variables: Dict) -> Result<Self, TypstError> {
-        Self::new_with_options(source_code, variables, Vec::new())
-    }
-
     /// Create a new TypstWorld with the given source code, variables, and package paths
-    pub fn new_with_options(
+    pub fn new(
         source_code: String,
         variables: Dict,
         package_paths: Vec<PathBuf>,
+        root_path: PathBuf,
     ) -> Result<Self, TypstError> {
         // Create a virtual path for the main source
         let main_path = VirtualPath::new("main.typ");
@@ -86,7 +77,7 @@ impl TypstWorld {
         let package_cache_dir = packages::get_cache_dir()?;
 
         Ok(Self {
-            root: PathBuf::from("."),
+            root: root_path,
             package_paths,
             package_cache_dir,
             library: LazyHash::new(Library::default()),
@@ -121,7 +112,14 @@ impl TypstWorld {
             }
             Value::Datetime(dt) => {
                 // Convert Datetime to Typst datetime constructor call
-                match (dt.year(), dt.month(), dt.day(), dt.hour(), dt.minute(), dt.second()) {
+                match (
+                    dt.year(),
+                    dt.month(),
+                    dt.day(),
+                    dt.hour(),
+                    dt.minute(),
+                    dt.second(),
+                ) {
                     (Some(y), Some(m), Some(d), Some(h), Some(min), Some(s)) => {
                         // Full datetime
                         format!("datetime(year: {}, month: {}, day: {}, hour: {}, minute: {}, second: {})", y, m, d, h, min, s)
@@ -175,7 +173,8 @@ impl TypstWorld {
             }
 
             // Not found in package_paths, try the cache directory
-            let cache_package_dir = self.package_cache_dir
+            let cache_package_dir = self
+                .package_cache_dir
                 .join(package.namespace.as_str())
                 .join(package.name.as_str())
                 .join(package.version.to_string());
@@ -202,14 +201,14 @@ impl TypstWorld {
                 .map_err(|e| typst::diag::FileError::Other(Some(e.to_string().into())))?;
 
             // Now try to resolve the path again
-            id.vpath()
-                .resolve(&downloaded_dir)
-                .ok_or_else(|| typst::diag::FileError::NotFound(id.vpath().as_rootless_path().into()))
+            id.vpath().resolve(&downloaded_dir).ok_or_else(|| {
+                typst::diag::FileError::NotFound(id.vpath().as_rootless_path().into())
+            })
         } else {
             // Not a package file, resolve relative to root
-            id.vpath()
-                .resolve(&self.root)
-                .ok_or_else(|| typst::diag::FileError::NotFound(id.vpath().as_rootless_path().into()))
+            id.vpath().resolve(&self.root).ok_or_else(|| {
+                typst::diag::FileError::NotFound(id.vpath().as_rootless_path().into())
+            })
         }
     }
 }
@@ -251,8 +250,7 @@ impl World for TypstWorld {
         let path = self.resolve_path(id)?;
 
         // Read the file
-        let bytes = std::fs::read(&path)
-            .map_err(|e| typst::diag::FileError::from_io(e, &path))?;
+        let bytes = std::fs::read(&path).map_err(|e| typst::diag::FileError::from_io(e, &path))?;
 
         Ok(Bytes::new(bytes))
     }
