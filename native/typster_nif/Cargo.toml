@@ -27,6 +27,9 @@ reqwest = { version = "0.12", features = [
 tar = "0.4"
 flate2 = "1.0"
 
+[target.aarch64-unknown-linux-gnu.dependencies]
+openssl-sys = { version = "0.9", features = ["vendored"] }
+
 [features]
 default = ["nif_version_2_15"]
 nif_version_2_15 = ["rustler/nif_version_2_15"]
