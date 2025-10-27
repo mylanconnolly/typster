@@ -74,7 +74,7 @@ jobs:
           subject-path: ${{ steps.build-crate.outputs.file-path }}
 
       - name: Artifact upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.build-crate.outputs.file-name }}
           path: ${{ steps.build-crate.outputs.file-path }}
