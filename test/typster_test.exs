@@ -258,6 +258,45 @@ defmodule TypsterTest do
   end
 
   describe "nested variables" do
+    test "handles nil values" do
+      template = """
+      = User Profile
+      #if description == none [
+        No description provided
+      ] else [
+        #description
+      ]
+      """
+
+      variables = %{
+        description: nil
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles nil values in nested structures" do
+      template = """
+      = #user.name
+      #if user.middle_name == none [
+        (no middle name)
+      ] else [
+        Middle: #user.middle_name
+      ]
+      """
+
+      variables = %{
+        user: %{
+          name: "Alice",
+          middle_name: nil
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
     test "handles nested maps" do
       template = """
       = #user.name
@@ -457,6 +496,7 @@ defmodule TypsterTest do
       assert {:error, reason} =
                Typster.render_pdf("= Test", variables: %{bad: {1, 2, 3}})
 
+      assert reason =~ "nil"
       assert reason =~ "boolean"
       assert reason =~ "integer"
       assert reason =~ "float"

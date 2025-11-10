@@ -47,6 +47,15 @@ fn term_to_value_with_path<'a>(term: Term<'a>, path: &[String]) -> Result<Value,
         return Ok(Value::Bool(b));
     }
 
+    // Try nil (Elixir's nil is an atom)
+    if term.is_atom() {
+        if let Ok(atom_str) = term.atom_to_string() {
+            if atom_str == "nil" {
+                return Ok(Value::None);
+            }
+        }
+    }
+
     // Try integer
     if let Ok(i) = term.decode::<i64>() {
         return Ok(Value::Int(i));
@@ -145,7 +154,7 @@ fn term_to_value_with_path<'a>(term: Term<'a>, path: &[String]) -> Result<Value,
     };
 
     Err(TypstError::InvalidInput(format!(
-        "Unsupported Elixir type '{}' for conversion to Typst value{}. Supported types: boolean, integer, float, string, list, map, Date, DateTime, NaiveDateTime",
+        "Unsupported Elixir type '{}' for conversion to Typst value{}. Supported types: nil, boolean, integer, float, string, list, map, Date, DateTime, NaiveDateTime",
         type_name, path_str
     )))
 }
