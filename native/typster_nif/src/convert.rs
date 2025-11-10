@@ -4,8 +4,42 @@ use typst::foundations::{Array, Datetime, Dict, Str, Value};
 
 use crate::TypstError;
 
+/// Get a human-readable description of an Elixir term's type
+fn get_term_type_name(term: Term) -> String {
+    if term.is_atom() {
+        "atom".to_string()
+    } else if term.is_binary() {
+        "binary".to_string()
+    } else if term.is_list() {
+        "list".to_string()
+    } else if term.is_map() {
+        "map".to_string()
+    } else if term.is_number() {
+        if term.decode::<i64>().is_ok() {
+            "integer".to_string()
+        } else {
+            "float".to_string()
+        }
+    } else if term.is_pid() {
+        "pid".to_string()
+    } else if term.is_ref() {
+        "reference".to_string()
+    } else if term.is_tuple() {
+        "tuple".to_string()
+    } else if term.is_fun() {
+        "function".to_string()
+    } else {
+        "unknown".to_string()
+    }
+}
+
 /// Convert a Rustler Term (Elixir data) to a Typst Value
 pub fn term_to_value<'a>(term: Term<'a>) -> Result<Value, TypstError> {
+    term_to_value_with_path(term, &[])
+}
+
+/// Internal version with path tracking for better error messages
+fn term_to_value_with_path<'a>(term: Term<'a>, path: &[String]) -> Result<Value, TypstError> {
     // Try to decode as different types
 
     // Try boolean first (must come before integer as booleans can be decoded as integers)
@@ -32,8 +66,15 @@ pub fn term_to_value<'a>(term: Term<'a>) -> Result<Value, TypstError> {
     if term.is_list() {
         let list: Vec<Term> = term.decode()?;
         let mut array = Array::new();
-        for item in list {
-            let value = term_to_value(item)?;
+        for (index, item) in list.iter().enumerate() {
+            let mut new_path = path.to_vec();
+            new_path.push(format!("[{}]", index));
+            let value = term_to_value_with_path(*item, &new_path).map_err(|e| {
+                TypstError::InvalidInput(format!(
+                    "Error in array at index {}: {}",
+                    index, e
+                ))
+            })?;
             array.push(value);
         }
         return Ok(Value::Array(array));
@@ -62,7 +103,14 @@ pub fn term_to_value<'a>(term: Term<'a>) -> Result<Value, TypstError> {
                         let mut dict = Dict::new();
                         for (key, value_term) in map {
                             if key != "__struct__" {
-                                let value = term_to_value(value_term)?;
+                                let mut new_path = path.to_vec();
+                                new_path.push(key.clone());
+                                let value = term_to_value_with_path(value_term, &new_path).map_err(|e| {
+                                    TypstError::InvalidInput(format!(
+                                        "Error in struct field '{}': {}",
+                                        key, e
+                                    ))
+                                })?;
                                 dict.insert(Str::from(key), value);
                             }
                         }
@@ -75,15 +123,30 @@ pub fn term_to_value<'a>(term: Term<'a>) -> Result<Value, TypstError> {
         // Regular map (not a struct)
         let mut dict = Dict::new();
         for (key, value_term) in map {
-            let value = term_to_value(value_term)?;
+            let mut new_path = path.to_vec();
+            new_path.push(key.clone());
+            let value = term_to_value_with_path(value_term, &new_path).map_err(|e| {
+                TypstError::InvalidInput(format!(
+                    "Error in map key '{}': {}",
+                    key, e
+                ))
+            })?;
             dict.insert(Str::from(key), value);
         }
         return Ok(Value::Dict(dict));
     }
 
     // If we get here, we couldn't convert the type
+    let type_name = get_term_type_name(term);
+    let path_str = if path.is_empty() {
+        String::new()
+    } else {
+        format!(" at path '{}'", path.join("."))
+    };
+
     Err(TypstError::InvalidInput(format!(
-        "Unsupported Elixir type for conversion to Typst value"
+        "Unsupported Elixir type '{}' for conversion to Typst value{}. Supported types: boolean, integer, float, string, list, map, Date, DateTime, NaiveDateTime",
+        type_name, path_str
     )))
 }
 
@@ -99,7 +162,12 @@ pub fn terms_to_dict<'a>(_env: Env<'a>, term: Term<'a>) -> Result<Dict, TypstErr
     let mut dict = Dict::new();
 
     for (key, value_term) in map {
-        let value = term_to_value(value_term)?;
+        let value = term_to_value(value_term).map_err(|e| {
+            TypstError::InvalidInput(format!(
+                "Error converting variable '{}': {}",
+                key, e
+            ))
+        })?;
         dict.insert(Str::from(key), value);
     }
 

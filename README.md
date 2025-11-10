@@ -152,7 +152,7 @@ metadata = %{
 {:ok, svg_pages} = Typster.render_svg(template)
 
 # Render to PNG with custom resolution
-{:ok, png_pages} = Typster.render_png(template, %{}, pixel_per_pt: 4.0)
+{:ok, png_pages} = Typster.render_png(template, pixel_per_pt: 4.0)
 
 # Save first page
 File.write!("page1.png", List.first(png_pages))

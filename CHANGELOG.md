@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-11-10
+
+### Fixed
+- **README documentation** - Corrected `render_png/2` example that incorrectly passed an empty map as the second parameter instead of using a keyword list
+
+### Improved
+- **Error messages for unsupported variable types** - Significantly enhanced error reporting when variables contain unsupported Elixir types:
+  - Error messages now include the **variable name** that caused the error
+  - Shows the **specific Elixir type** that was rejected (e.g., tuple, pid, function, reference)
+  - Provides the **path to nested values** in maps and arrays (e.g., `user.data`, `items[2]`)
+  - Lists all **supported types** to guide users toward correct usage
+  - Before: `"Failed to create world: Invalid input: Unsupported Elixir type for conversion to Typst value"`
+  - After: `"Error converting variable 'user': Error in map key 'data': Unsupported Elixir type 'pid' for conversion to Typst value at path 'data'. Supported types: boolean, integer, float, string, list, map, Date, DateTime, NaiveDateTime"`
+
+### Example Error Messages
+```elixir
+# Top-level variable error
+Typster.render_pdf("= Test", variables: %{my_var: {:tuple, "value"}})
+# => Error converting variable 'my_var': Unsupported Elixir type 'tuple'...
+
+# Nested map error
+Typster.render_pdf("= Test", variables: %{user: %{data: self()}})
+# => Error converting variable 'user': Error in map key 'data': Unsupported Elixir type 'pid'...
+
+# Array error
+Typster.render_pdf("= Test", variables: %{items: ["ok", fn -> :bad end]})
+# => Error converting variable 'items': Error in array at index 1: Unsupported Elixir type 'function'...
+```
+
 ## [0.5.0] - 2025-10-24
 
 ### Breaking Changes
@@ -134,6 +163,8 @@ This release has no new features or changes. I accidentally retired version 0.3.
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.5.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.5.1
+[0.5.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.5.0
 [0.4.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.4.0
 [0.3.2]: https://github.com/mylanconnolly/typster/releases/tag/v0.3.2
 [0.3.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.3.1

@@ -395,4 +395,74 @@ defmodule TypsterTest do
       assert :ok = Typster.check!("= #title", variables: variables)
     end
   end
+
+  describe "error messages for unsupported types" do
+    test "reports variable name for unsupported type at top level" do
+      assert {:error, reason} =
+               Typster.render_pdf("= Test", variables: %{my_var: {:tuple, "value"}})
+
+      assert reason =~ "my_var"
+      assert reason =~ "tuple"
+      assert reason =~ "Supported types"
+    end
+
+    test "reports variable name and path for unsupported type in nested map" do
+      assert {:error, reason} =
+               Typster.render_pdf("= Test",
+                 variables: %{
+                   user: %{
+                     name: "Alice",
+                     data: self()
+                   }
+                 }
+               )
+
+      assert reason =~ "user"
+      assert reason =~ "data"
+      assert reason =~ "pid"
+    end
+
+    test "reports array index for unsupported type in array" do
+      assert {:error, reason} =
+               Typster.render_pdf("= Test",
+                 variables: %{
+                   items: ["valid", "also valid", fn -> :oops end]
+                 }
+               )
+
+      assert reason =~ "items"
+      assert reason =~ "index 2"
+      assert reason =~ "function"
+    end
+
+    test "reports deeply nested path for unsupported type" do
+      assert {:error, reason} =
+               Typster.render_pdf("= Test",
+                 variables: %{
+                   level1: %{
+                     level2: %{
+                       level3: make_ref()
+                     }
+                   }
+                 }
+               )
+
+      assert reason =~ "level1"
+      assert reason =~ "level2"
+      assert reason =~ "level3"
+      assert reason =~ "reference"
+    end
+
+    test "shows supported types in error message" do
+      assert {:error, reason} =
+               Typster.render_pdf("= Test", variables: %{bad: {1, 2, 3}})
+
+      assert reason =~ "boolean"
+      assert reason =~ "integer"
+      assert reason =~ "float"
+      assert reason =~ "string"
+      assert reason =~ "list"
+      assert reason =~ "map"
+    end
+  end
 end
