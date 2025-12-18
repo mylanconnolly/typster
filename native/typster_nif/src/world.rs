@@ -106,7 +106,16 @@ impl TypstWorld {
             Value::Dict(dict) => {
                 let items: Vec<String> = dict
                     .iter()
-                    .map(|(k, v)| format!("{}: {}", k.as_str(), Self::value_to_typst_repr(v)))
+                    .map(|(k, v)| {
+                        // Always quote dictionary keys to handle:
+                        // - Keys with special characters (e.g., "2025-01" would be parsed as subtraction)
+                        // - Keys that conflict with Typst built-ins (e.g., "h" for horizontal spacing)
+                        format!(
+                            "\"{}\": {}",
+                            k.as_str().replace('\\', "\\\\").replace('"', "\\\""),
+                            Self::value_to_typst_repr(v)
+                        )
+                    })
                     .collect();
                 format!("({})", items.join(", "))
             }

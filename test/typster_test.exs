@@ -334,6 +334,108 @@ defmodule TypsterTest do
       assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
+
+    test "handles dictionary keys with dashes (e.g., date strings)" do
+      # Keys like "2025-01" would be interpreted as subtraction (2025 - 01 = 2024) if not quoted
+      template = """
+      = Report
+      Value: #report.at("2025-01").at("value")
+      """
+
+      variables = %{
+        "report" => %{
+          "2025-01" => %{
+            "value" => 42
+          }
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles dictionary keys that match Typst built-in function names" do
+      # Keys like "h" (horizontal spacing), "v" (vertical spacing), etc.
+      template = """
+      = Data Report
+      H value: #data.at("h").at("count")
+      V value: #data.at("v").at("count")
+      """
+
+      variables = %{
+        "data" => %{
+          "h" => %{"count" => 100},
+          "v" => %{"count" => 200}
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles dictionary keys with spaces and underscores" do
+      template = """
+      = Special Keys
+      Space key: #data.at("key with spaces")
+      Underscore key: #data.at("key_with_underscores")
+      """
+
+      variables = %{
+        "data" => %{
+          "key with spaces" => "spaced value",
+          "key_with_underscores" => "underscore value"
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles complex nested structure with problematic keys" do
+      # Real-world scenario: monthly report data with date keys and category abbreviations
+      template = """
+      = Monthly Report
+
+      January 2025 Histogram:
+      - Age 30-39: #report.at("2025-01").at("h").at("age_30_39")
+      - Age 40-49: #report.at("2025-01").at("h").at("age_40_49")
+      """
+
+      variables = %{
+        "report" => %{
+          "2025-01" => %{
+            "h" => %{
+              "age_30_39" => 26,
+              "age_40_49" => 76,
+              "age_50_59" => 60,
+              "age_60_69" => 73,
+              "age_70_79" => 60,
+              "age_gteq_80" => 15,
+              "age_lteq_29" => 5
+            }
+          }
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles dictionary keys with numeric prefixes" do
+      template = """
+      = Data
+      Value: #data.at("123abc")
+      """
+
+      variables = %{
+        "data" => %{
+          "123abc" => "numeric prefix value"
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
   end
 
   describe "check/3" do
