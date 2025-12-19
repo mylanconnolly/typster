@@ -15,7 +15,7 @@ jobs:
       matrix:
         otp: ["27.3", "28.1"]
         elixir: ["1.18"]
-        rust: ["1.88"]
+        rust: ["1.92"]
 
     env:
       MIX_ENV: test
