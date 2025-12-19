@@ -12,7 +12,7 @@ rustler = { version = "0.37.0", default-features = false, features = [
     "derive",
 ] }
 typst = "0.13"
-typst-pdf = "0.13"
+typst-pdf = "0.14"
 typst-svg = "0.13"
 typst-render = "0.13"
 typst-kit = { version = "0.13", features = ["default", "embed-fonts"] }
