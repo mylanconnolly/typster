@@ -8,7 +8,7 @@ use typst::foundations::{Bytes, Datetime, Dict, Value};
 use typst::syntax::{FileId, Source, VirtualPath};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
-use typst::{Library, World};
+use typst::{Library, LibraryExt, World};
 use typst_kit::fonts::{FontSlot, Fonts};
 
 use crate::packages;
