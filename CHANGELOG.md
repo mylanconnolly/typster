@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-01-09
+
+### Fixed
+- **Backslash character escaping in template variables** - Fixed a bug where backslash characters in string values would cause Typst compilation errors. Backslashes are now properly escaped when converting Elixir strings to Typst code. This also fixes backslash handling in PDF metadata fields (title, author, description, keywords).
+
+### Example
+```elixir
+# This now works correctly
+variables = %{message: "The backslash character is \\"}
+Typster.render_pdf("= #message", variables: variables)
+
+# Windows-style paths also work
+variables = %{path: "C:\\Users\\Alice\\Documents"}
+Typster.render_pdf("= #path", variables: variables)
+```
+
 ## [0.6.0] - 2025-12-18
 
 ### Fixed
@@ -173,6 +189,9 @@ This release has no new features or changes. I accidentally retired version 0.3.
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.7.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.0
+[0.6.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.6.0
+[0.5.2]: https://github.com/mylanconnolly/typster/releases/tag/v0.5.2
 [0.5.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.5.1
 [0.5.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.5.0
 [0.4.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.4.0

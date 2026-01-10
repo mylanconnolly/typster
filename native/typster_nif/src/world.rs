@@ -98,7 +98,7 @@ impl TypstWorld {
             Value::Bool(b) => b.to_string(),
             Value::Int(i) => i.to_string(),
             Value::Float(f) => f.to_string(),
-            Value::Str(s) => format!("\"{}\"", s.as_str().replace("\"", "\\\"")),
+            Value::Str(s) => format!("\"{}\"", s.as_str().replace('\\', "\\\\").replace('"', "\\\"")),
             Value::Array(arr) => {
                 let items: Vec<String> = arr.iter().map(|v| Self::value_to_typst_repr(v)).collect();
                 format!("({})", items.join(", "))

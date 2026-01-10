@@ -537,6 +537,110 @@ defmodule TypsterTest do
     end
   end
 
+  describe "special character escaping" do
+    test "handles single backslash in string variable" do
+      template = """
+      = Example
+      #message
+      """
+
+      variables = %{message: "The backslash character is \\"}
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles multiple backslashes in string" do
+      template = "= #path"
+      variables = %{path: "C:\\Users\\Alice\\Documents"}
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash followed by quote" do
+      template = "= #text"
+      variables = %{text: "She said \\\"Hello\\\""}
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash at end of string" do
+      template = "= #text"
+      variables = %{text: "trailing backslash\\"}
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash in nested map value" do
+      template = """
+      = #user.path
+      """
+
+      variables = %{
+        user: %{
+          path: "C:\\Users\\Bob"
+        }
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash in array element" do
+      template = """
+      #for item in items [
+        #item
+      ]
+      """
+
+      variables = %{
+        items: ["normal", "with\\backslash", "also\\normal\\path"]
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash in metadata title" do
+      metadata = %{title: "Report for C:\\Data"}
+
+      assert {:ok, pdf} = Typster.render_pdf("= Test", metadata: metadata)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash in metadata author" do
+      metadata = %{author: "User\\Admin"}
+
+      assert {:ok, pdf} = Typster.render_pdf("= Test", metadata: metadata)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash in metadata description" do
+      metadata = %{description: "File at C:\\path\\to\\file"}
+
+      assert {:ok, pdf} = Typster.render_pdf("= Test", metadata: metadata)
+      assert is_binary(pdf)
+    end
+
+    test "handles backslash in metadata keywords" do
+      metadata = %{keywords: "path\\one, path\\two"}
+
+      assert {:ok, pdf} = Typster.render_pdf("= Test", metadata: metadata)
+      assert is_binary(pdf)
+    end
+
+    test "handles mixed special characters" do
+      template = "= #text"
+      variables = %{text: "Quote: \" Backslash: \\ Both: \\\""}
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+  end
+
   describe "error messages for unsupported types" do
     test "reports variable name for unsupported type at top level" do
       assert {:error, reason} =

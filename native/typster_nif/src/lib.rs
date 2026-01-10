@@ -81,17 +81,17 @@ fn generate_document_metadata(metadata: std::collections::HashMap<String, String
     let mut parts = Vec::new();
 
     if let Some(title) = metadata.get("title") {
-        parts.push(format!("title: \"{}\"", title.replace("\"", "\\\"")));
+        parts.push(format!("title: \"{}\"", title.replace('\\', "\\\\").replace('"', "\\\"")));
     }
 
     if let Some(author) = metadata.get("author") {
-        parts.push(format!("author: \"{}\"", author.replace("\"", "\\\"")));
+        parts.push(format!("author: \"{}\"", author.replace('\\', "\\\\").replace('"', "\\\"")));
     }
 
     if let Some(description) = metadata.get("description") {
         parts.push(format!(
             "description: \"{}\"",
-            description.replace("\"", "\\\"")
+            description.replace('\\', "\\\\").replace('"', "\\\"")
         ));
     }
 
@@ -99,7 +99,7 @@ fn generate_document_metadata(metadata: std::collections::HashMap<String, String
         // Keywords can be comma-separated string
         let keywords_list: Vec<String> = keywords
             .split(',')
-            .map(|k| format!("\"{}\"", k.trim().replace("\"", "\\\"")))
+            .map(|k| format!("\"{}\"", k.trim().replace('\\', "\\\\").replace('"', "\\\"")))
             .collect();
         parts.push(format!("keywords: ({})", keywords_list.join(", ")));
     }
