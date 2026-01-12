@@ -101,7 +101,13 @@ impl TypstWorld {
             Value::Str(s) => format!("\"{}\"", s.as_str().replace('\\', "\\\\").replace('"', "\\\"")),
             Value::Array(arr) => {
                 let items: Vec<String> = arr.iter().map(|v| Self::value_to_typst_repr(v)).collect();
-                format!("({})", items.join(", "))
+                // In Typst, a single-element array needs a trailing comma: (item,)
+                // Without it, (item) is just a parenthesized expression, not an array
+                if items.len() == 1 {
+                    format!("({},)", items[0])
+                } else {
+                    format!("({})", items.join(", "))
+                }
             }
             Value::Dict(dict) => {
                 let items: Vec<String> = dict

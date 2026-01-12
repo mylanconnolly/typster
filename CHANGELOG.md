@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2025-01-12
+
+### Fixed
+- **Single element arrays are now properly converted to Typst arrays** - Fixed a bug where single element arrays were trying to be parsed as Typst dictionaries. This release corrects this behavior.
+
 ## [0.7.0] - 2025-01-09
 
 ### Fixed
@@ -189,6 +194,7 @@ This release has no new features or changes. I accidentally retired version 0.3.
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.7.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.1
 [0.7.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.0
 [0.6.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.6.0
 [0.5.2]: https://github.com/mylanconnolly/typster/releases/tag/v0.5.2

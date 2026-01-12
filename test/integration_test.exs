@@ -249,5 +249,38 @@ defmodule Typster.IntegrationTest do
       assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
       assert is_binary(pdf)
     end
+
+    test "handles single-element list of maps" do
+      # Regression test: single-element lists of maps should be serialized
+      # as arrays, not dictionaries. Without the trailing comma fix,
+      # this would fail with "cannot access fields on type array"
+      template = """
+      #for person in people [
+        - #person.surname, #person.name
+      ]
+      """
+
+      variables = %{
+        people: [
+          %{name: "Liza", surname: "Simpson"}
+        ]
+      }
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
+
+    test "handles single-element list of primitives" do
+      template = """
+      #for item in items [
+        - #item
+      ]
+      """
+
+      variables = %{items: ["only one"]}
+
+      assert {:ok, pdf} = Typster.render_pdf(template, variables: variables)
+      assert is_binary(pdf)
+    end
   end
 end
