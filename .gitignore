@@ -39,3 +39,5 @@ checksum-*exs
 # Direnv
 .direnv/
 .hex-docs
+.dexter.db*
+.expert
