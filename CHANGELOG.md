@@ -5,12 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.1] - 2025-01-12
+## [0.7.2] - 2026-04-17
+
+### Changed
+- Updated Rust NIF dependencies:
+  - `openssl-sys` 0.9.112 → 0.9.113
+  - `quinn-proto` 0.11.13 → 0.11.14 (indirect)
+  - `rustls-webpki` 0.103.7 → 0.103.11 (indirect)
+  - `time` 0.3.44 → 0.3.47 (indirect)
+
+## [0.7.1] - 2026-01-12
 
 ### Fixed
 - **Single element arrays are now properly converted to Typst arrays** - Fixed a bug where single element arrays were trying to be parsed as Typst dictionaries. This release corrects this behavior.
 
-## [0.7.0] - 2025-01-09
+## [0.7.0] - 2026-01-09
 
 ### Fixed
 - **Backslash character escaping in template variables** - Fixed a bug where backslash characters in string values would cause Typst compilation errors. Backslashes are now properly escaped when converting Elixir strings to Typst code. This also fixes backslash handling in PDF metadata fields (title, author, description, keywords).
@@ -194,6 +203,7 @@ This release has no new features or changes. I accidentally retired version 0.3.
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.7.2]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.2
 [0.7.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.1
 [0.7.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.0
 [0.6.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.6.0
