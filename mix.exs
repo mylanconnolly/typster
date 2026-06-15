@@ -52,7 +52,7 @@ defmodule Typster.MixProject do
   defp deps do
     [
       {:usage_rules, "~> 1.2", only: [:dev]},
-      {:rustler, "~> 0.37.1", optional: true},
+      {:rustler, "~> 0.38.0", optional: true},
       {:rustler_precompiled, "~> 0.8"},
       {:jason, "~> 1.0"},
       {:stream_data, "~> 1.1", only: [:test, :dev]},
