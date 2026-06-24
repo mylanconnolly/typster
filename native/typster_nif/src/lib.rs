@@ -6,7 +6,8 @@ use rustler::types::Binary;
 use rustler::{Env, Error as RustlerError, NifStruct, OwnedBinary, Term};
 use std::collections::HashMap;
 use std::fmt;
-use typst::layout::PagedDocument;
+use typst::utils::Scalar;
+use typst_layout::PagedDocument;
 
 use world::TypstWorld;
 
@@ -215,9 +216,10 @@ fn compile_to_svg<'a>(
     })?;
 
     // Render each page to SVG
+    let svg_options = typst_svg::SvgOptions::default();
     let mut svg_pages = Vec::new();
-    for page in document.pages.iter() {
-        let svg = typst_svg::svg(page);
+    for page in document.pages().iter() {
+        let svg = typst_svg::svg(page, &svg_options);
         svg_pages.push(svg);
     }
 
@@ -242,9 +244,13 @@ fn compile_to_png<'a>(
     })?;
 
     // Render each page to PNG
+    let render_options = typst_render::RenderOptions {
+        pixel_per_pt: Scalar::new(options.pixel_per_pt as f64),
+        ..Default::default()
+    };
     let mut png_pages = Vec::new();
-    for page in document.pages.iter() {
-        let pixmap = typst_render::render(page, options.pixel_per_pt);
+    for page in document.pages().iter() {
+        let pixmap = typst_render::render(page, &render_options);
         let png_bytes = pixmap
             .encode_png()
             .map_err(|e| format!("PNG encoding failed: {}", e))?;

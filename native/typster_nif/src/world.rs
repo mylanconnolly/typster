@@ -4,12 +4,12 @@ use std::sync::Mutex;
 
 use chrono::Datelike;
 use typst::diag::FileResult;
-use typst::foundations::{Bytes, Datetime, Dict, Value};
-use typst::syntax::{FileId, Source, VirtualPath};
+use typst::foundations::{Bytes, Datetime, Dict, Duration, Value};
+use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
-use typst_kit::fonts::{FontSlot, Fonts};
+use typst_kit::fonts::{self, FontStore};
 
 use crate::packages;
 use crate::TypstError;
@@ -24,10 +24,8 @@ pub struct TypstWorld {
     package_cache_dir: PathBuf,
     /// The standard library
     library: LazyHash<Library>,
-    /// Font book for font discovery
-    book: LazyHash<FontBook>,
-    /// Available fonts
-    fonts: Vec<FontSlot>,
+    /// Font store providing the font book and lazily-loaded fonts
+    fonts: FontStore,
     /// Cache of loaded source files
     sources: HashMap<FileId, Source>,
     /// Main source file
@@ -47,8 +45,9 @@ impl TypstWorld {
         root_path: PathBuf,
     ) -> Result<Self, TypstError> {
         // Create a virtual path for the main source
-        let main_path = VirtualPath::new("main.typ");
-        let main_id = FileId::new(None, main_path);
+        let main_path = VirtualPath::new("main.typ")
+            .map_err(|e| TypstError::InvalidInput(format!("Invalid main path: {}", e)))?;
+        let main_id = FileId::new(RootedPath::new(VirtualRoot::Project, main_path));
 
         // Generate variable declarations
         let mut var_declarations = String::new();
@@ -81,8 +80,7 @@ impl TypstWorld {
             package_paths,
             package_cache_dir,
             library: LazyHash::new(Library::default()),
-            book: LazyHash::new(fonts.book.clone()),
-            fonts: fonts.fonts,
+            fonts,
             sources,
             main: main_id,
             files: HashMap::new(),
@@ -154,20 +152,20 @@ impl TypstWorld {
         }
     }
 
-    /// Search for system fonts
-    fn search_fonts() -> Fonts {
-        let fonts = Fonts::searcher()
-            .include_system_fonts(true)
-            .include_embedded_fonts(true)
-            .search();
-
-        fonts
+    /// Build a font store containing both system and embedded fonts.
+    fn search_fonts() -> FontStore {
+        let mut store = FontStore::new();
+        // System fonts first, so user-installed fonts take precedence, then the
+        // embedded fallback fonts guarantee a baseline set is always available.
+        store.extend(fonts::system());
+        store.extend(fonts::embedded());
+        store
     }
 
     /// Resolve a FileId to an actual file system path
     fn resolve_path(&self, id: FileId) -> FileResult<PathBuf> {
         // Check if this is a package file
-        if let Some(package) = id.package() {
+        if let VirtualRoot::Package(package) = id.root() {
             // Try to find the package in configured package_paths first
             for package_root in &self.package_paths {
                 // Package format: @namespace/name/version
@@ -176,7 +174,7 @@ impl TypstWorld {
                     .join(package.name.as_str())
                     .join(package.version.to_string());
 
-                if let Some(resolved) = id.vpath().resolve(&package_dir) {
+                if let Ok(resolved) = id.vpath().realize(&package_dir) {
                     if resolved.exists() {
                         return Ok(resolved);
                     }
@@ -190,7 +188,7 @@ impl TypstWorld {
                 .join(package.name.as_str())
                 .join(package.version.to_string());
 
-            if let Some(resolved) = id.vpath().resolve(&cache_package_dir) {
+            if let Ok(resolved) = id.vpath().realize(&cache_package_dir) {
                 if resolved.exists() {
                     return Ok(resolved);
                 }
@@ -201,7 +199,7 @@ impl TypstWorld {
             let _lock = self.download_lock.lock().unwrap();
 
             // Check again after acquiring lock (another thread might have downloaded it)
-            if let Some(resolved) = id.vpath().resolve(&cache_package_dir) {
+            if let Ok(resolved) = id.vpath().realize(&cache_package_dir) {
                 if resolved.exists() {
                     return Ok(resolved);
                 }
@@ -212,13 +210,13 @@ impl TypstWorld {
                 .map_err(|e| typst::diag::FileError::Other(Some(e.to_string().into())))?;
 
             // Now try to resolve the path again
-            id.vpath().resolve(&downloaded_dir).ok_or_else(|| {
-                typst::diag::FileError::NotFound(id.vpath().as_rootless_path().into())
+            id.vpath().realize(&downloaded_dir).map_err(|_| {
+                typst::diag::FileError::NotFound(id.vpath().get_without_slash().into())
             })
         } else {
             // Not a package file, resolve relative to root
-            id.vpath().resolve(&self.root).ok_or_else(|| {
-                typst::diag::FileError::NotFound(id.vpath().as_rootless_path().into())
+            id.vpath().realize(&self.root).map_err(|_| {
+                typst::diag::FileError::NotFound(id.vpath().get_without_slash().into())
             })
         }
     }
@@ -230,7 +228,7 @@ impl World for TypstWorld {
     }
 
     fn book(&self) -> &LazyHash<FontBook> {
-        &self.book
+        self.fonts.book()
     }
 
     fn main(&self) -> FileId {
@@ -267,19 +265,24 @@ impl World for TypstWorld {
     }
 
     fn font(&self, index: usize) -> Option<Font> {
-        self.fonts.get(index)?.get()
+        self.fonts.font(index)
     }
 
-    fn today(&self, offset: Option<i64>) -> Option<Datetime> {
-        let now = chrono::Local::now();
-        let offset_hours = offset.unwrap_or(0);
-        let offset_duration = chrono::Duration::hours(offset_hours);
-        let adjusted = now + offset_duration;
+    fn today(&self, offset: Option<Duration>) -> Option<Datetime> {
+        // Per the `World::today` contract: with no offset, use the local date;
+        // with an offset, use the UTC date shifted by that offset.
+        let (year, month, day) = match offset {
+            None => {
+                let now = chrono::Local::now();
+                (now.year(), now.month(), now.day())
+            }
+            Some(offset) => {
+                let now = chrono::Utc::now();
+                let adjusted = now + chrono::Duration::seconds(offset.seconds() as i64);
+                (adjusted.year(), adjusted.month(), adjusted.day())
+            }
+        };
 
-        Datetime::from_ymd(
-            adjusted.year(),
-            adjusted.month().try_into().ok()?,
-            adjusted.day().try_into().ok()?,
-        )
+        Datetime::from_ymd(year, month.try_into().ok()?, day.try_into().ok()?)
     }
 }
