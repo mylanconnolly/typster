@@ -23,7 +23,7 @@ defmodule Typster.PackageTest do
 
     test "imports and uses cetz drawing package" do
       template = """
-      #import "@preview/cetz:0.3.2": canvas, draw
+      #import "@preview/cetz:0.4.2": canvas, draw
 
       = CeTZ Test
 
@@ -80,7 +80,7 @@ defmodule Typster.PackageTest do
     test "handles multiple package imports in one document" do
       template = """
       #import "@preview/tiaoma:0.3.0": qrcode
-      #import "@preview/cetz:0.3.2": canvas, draw
+      #import "@preview/cetz:0.4.2": canvas, draw
 
       = Multi-Package Test
 

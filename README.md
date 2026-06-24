@@ -176,7 +176,7 @@ template = """
 # Use multiple packages together
 template = """
 #import "@preview/tiaoma:0.3.0": qrcode
-#import "@preview/cetz:0.3.2": canvas, draw
+#import "@preview/cetz:0.4.2": canvas, draw
 
 = Document with Packages
 

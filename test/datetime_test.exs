@@ -262,4 +262,54 @@ defmodule Typster.DatetimeTest do
       assert byte_size(pdf) > 2000
     end
   end
+
+  describe "datetime.today() builtin (World::today)" do
+    # These exercise the `World::today` NIF callback, which Typst invokes when a
+    # template evaluates the built-in `datetime.today()`. This is distinct from
+    # passing a Date/DateTime *value* as a variable.
+
+    test "datetime.today() with no offset compiles and renders" do
+      template = """
+      = Today
+
+      Today is #datetime.today().display("[year]-[month]-[day]").
+      """
+
+      assert {:ok, pdf} = Typster.render_pdf(template)
+      assert is_binary(pdf)
+      assert byte_size(pdf) > 1000
+    end
+
+    test "datetime.today() passes syntax check" do
+      assert :ok = Typster.check(~S|#datetime.today().display()|)
+    end
+
+    test "datetime.today(offset: N) with an integer hour offset renders" do
+      # `offset` is treated as a duration in hours by Typst and handed to
+      # `World::today` as a Duration; this is the UTC-plus-offset code path.
+      for offset <- [0, 5, -8, 14] do
+        template = """
+        Generated: #datetime.today(offset: #{offset}).display("[year]-[month]-[day]")
+        """
+
+        assert {:ok, pdf} = Typster.render_pdf(template),
+               "expected today(offset: #{offset}) to render"
+
+        assert is_binary(pdf)
+      end
+    end
+
+    test "datetime.today() works alongside auto date metadata" do
+      template = """
+      = Report
+
+      Run on #datetime.today().display("[year]/[month]/[day]").
+      """
+
+      assert {:ok, pdf} =
+               Typster.render_pdf(template, metadata: %{title: "Report", date: "auto"})
+
+      assert is_binary(pdf)
+    end
+  end
 end
