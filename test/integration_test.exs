@@ -162,7 +162,7 @@ defmodule Typster.IntegrationTest do
     @tag :packages
     test "renders document with cetz plotting package" do
       template = """
-      #import "@preview/cetz:0.3.2": canvas, draw
+      #import "@preview/cetz:0.4.2": canvas, draw
 
       #set page(width: 300pt, height: 300pt)
 
