@@ -14,9 +14,14 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     groups:
-      cargo:
+      typst:
         patterns:
-          - "*"
+          - "typst"
+          - "typst-*"
+      serde:
+        patterns:
+          - "serde"
+          - "serde_*"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
