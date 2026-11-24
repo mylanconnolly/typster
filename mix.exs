@@ -35,7 +35,12 @@ defmodule Typster.MixProject do
   defp package do
     [
       name: "typster",
-      files: ~w(lib native .formatter.exs mix.exs CHANGELOG.md README.md LICENSE checksum-*.exs),
+      # List the crate's sources explicitly: a bare `native` would also package
+      # native/typster_nif/target, which exceeds Hex's size limit after a local build
+      files:
+        ~w(lib native/typster_nif/src native/typster_nif/Cargo.toml native/typster_nif/Cargo.lock
+           native/typster_nif/README.md .formatter.exs mix.exs CHANGELOG.md README.md LICENSE
+           checksum-*.exs),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/mylanconnolly/typster"}
     ]
