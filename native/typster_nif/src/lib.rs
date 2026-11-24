@@ -29,6 +29,26 @@ struct TypsterOptions<'a> {
     package_paths: Vec<String>,
     root_path: String,
     variables: Term<'a>,
+    cache_max_age: usize,
+}
+
+/// Evicts Typst's global memoization cache when dropped.
+///
+/// Typst memoizes intermediate results in a process-wide `comemo` cache that
+/// is never trimmed on its own. In a long-running BEAM node that means every
+/// render leaves its cached layout results behind, so memory grows without
+/// bound. Each NIF holds one of these guards for the duration of the call so
+/// the cache is trimmed on success and on every error path alike.
+///
+/// Entries survive `max_age` evictions after their last use; `0` clears the
+/// cache entirely. The cache is shared by all concurrent renders, and evicting
+/// an entry another render is using only costs a recomputation.
+struct EvictGuard(usize);
+
+impl Drop for EvictGuard {
+    fn drop(&mut self) {
+        comemo::evict(self.0);
+    }
 }
 
 impl fmt::Display for TypstError {
@@ -173,6 +193,9 @@ fn compile_to_pdf<'a>(
     source: String,
     options: TypsterOptions<'a>,
 ) -> Result<Binary<'a>, String> {
+    // Declared first so it drops last, after the world and document are freed
+    let _evict = EvictGuard(options.cache_max_age);
+
     // Create the world with the source code and options
     let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
@@ -204,6 +227,9 @@ fn compile_to_svg<'a>(
     source: String,
     options: TypsterOptions<'a>,
 ) -> Result<Vec<String>, String> {
+    // Declared first so it drops last, after the world and document are freed
+    let _evict = EvictGuard(options.cache_max_age);
+
     // Create the world with the source code and options
     let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
@@ -231,6 +257,9 @@ fn compile_to_png<'a>(
     source: String,
     options: TypsterOptions<'a>,
 ) -> Result<Vec<Binary<'a>>, String> {
+    // Declared first so it drops last, after the world and document are freed
+    let _evict = EvictGuard(options.cache_max_age);
+
     // Create the world with the source code and options
     let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
@@ -266,6 +295,9 @@ fn check_syntax<'a>(
     source: String,
     options: TypsterOptions<'a>,
 ) -> Result<Vec<String>, String> {
+    // Declared first so it drops last, after the world and document are freed
+    let _evict = EvictGuard(options.cache_max_age);
+
     // Create the world with the source code and options
     let world = world_from_options(env, source, &options)
         .map_err(|e| format!("Failed to create world: {}", e))?;
