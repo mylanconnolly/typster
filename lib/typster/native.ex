@@ -1,7 +1,8 @@
 defmodule Typster.Native.TypsterOptions do
   @moduledoc false
 
-  defstruct metadata: %{},
+  defstruct cache_max_age: 10,
+            metadata: %{},
             package_paths: [],
             pixel_per_pt: 2.0,
             root_path: ".",

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2026-11-24
+
+### Fixed
+- **Unbounded memory growth across renders** - Typst's process-wide memoization cache was never trimmed, so a long-running node kept every render's intermediate results (roughly 0.9 MB per one-page letter) until it was OOM killed. The cache is now evicted after every render.
+
+### Added
+- `:cache_max_age` render option and `config :typster, cache_max_age: n` to control how many renders an unused cache entry survives (default: 10, `0` clears the cache after every render).
+
 ## [0.7.2] - 2026-04-17
 
 ### Changed
@@ -203,6 +211,7 @@ This release has no new features or changes. I accidentally retired version 0.3.
 - Typst 0.13.1
 - Rustler 0.37.1
 
+[0.7.3]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.3
 [0.7.2]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.2
 [0.7.1]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.1
 [0.7.0]: https://github.com/mylanconnolly/typster/releases/tag/v0.7.0
