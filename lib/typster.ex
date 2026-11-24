@@ -35,6 +35,22 @@ defmodule Typster do
   - `:package_paths` - List of local package directories
   - `:metadata` - Map of PDF metadata (title, author, description, keywords, date)
   - `:pixel_per_pt` - PNG resolution (default: 2.0)
+  - `:cache_max_age` - How many renders a cached intermediate result survives
+    after its last use (default: 10, see "Memory" below)
+
+  ## Memory
+
+  Typst keeps a process-wide cache of intermediate results so that renders
+  sharing content (fonts, images, repeated blocks) can reuse work. Typster trims
+  that cache after every render; without trimming it grows by roughly the size
+  of each document's layout and is never released.
+
+  `:cache_max_age` controls the trimming: an entry is dropped once that many
+  renders have finished, on any process, without using it. `0` clears the cache
+  after every render, which gives the lowest memory use and slightly slower
+  renders. Set it per call, or globally:
+
+      config :typster, cache_max_age: 10
 
   ## Concurrency
 
@@ -70,6 +86,7 @@ defmodule Typster do
   @type root_path :: String.t()
   @type variables :: map()
   @type render_options :: [
+          cache_max_age: non_neg_integer(),
           metadata: metadata(),
           package_paths: package_paths(),
           pixel_per_pt: float(),
@@ -129,7 +146,8 @@ defmodule Typster do
       metadata: metadata,
       package_paths: package_paths,
       root_path: root_path,
-      variables: variables
+      variables: variables,
+      cache_max_age: cache_max_age(opts)
     }
 
     case Native.compile_to_pdf(source, options) do
@@ -172,7 +190,8 @@ defmodule Typster do
       metadata: %{},
       package_paths: package_paths,
       root_path: root_path,
-      variables: variables
+      variables: variables,
+      cache_max_age: cache_max_age(opts)
     }
 
     case Native.compile_to_svg(source, options) do
@@ -220,7 +239,8 @@ defmodule Typster do
       package_paths: package_paths,
       pixel_per_pt: pixel_per_pt,
       root_path: root_path,
-      variables: variables
+      variables: variables,
+      cache_max_age: cache_max_age(opts)
     }
 
     case Native.compile_to_png(source, options) do
@@ -321,7 +341,8 @@ defmodule Typster do
       metadata: %{},
       package_paths: package_paths,
       root_path: root_path,
-      variables: variables
+      variables: variables,
+      cache_max_age: cache_max_age(opts)
     }
 
     case Native.check_syntax(source, options) do
@@ -418,6 +439,12 @@ defmodule Typster do
 
   # Convert map with atom keys to string keys for NIF compatibility
   # Recursively handle nested maps and lists
+  defp cache_max_age(opts) do
+    Keyword.get_lazy(opts, :cache_max_age, fn ->
+      Application.get_env(:typster, :cache_max_age, 10)
+    end)
+  end
+
   # NOTE: Only keys are converted to strings, values are preserved as-is
   # (numbers, booleans, etc.) except for atoms which are converted to strings
   # Structs like Date, DateTime, NaiveDateTime are converted to maps with string keys
